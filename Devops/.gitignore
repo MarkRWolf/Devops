@@ -1,0 +1,9 @@
+# .NET build outputs
+bin/
+obj/
+
+# Visual Studio files
+*.user
+*.suo
+
+appsettings*.json

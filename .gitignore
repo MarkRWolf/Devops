@@ -1,0 +1,11 @@
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Env & secrets
+.env*
+
+# Logs & temp
+*.log
+tmp/
