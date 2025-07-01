@@ -20,7 +20,7 @@ svc.AddDbContext<DevopsDb>(o =>
 
 // ─────  IDENTITY  ───────────────────────────────────────────────────────────────
 svc.AddIdentityCore<DevopsUser>(o => o.Password.RequireNonAlphanumeric = false)
-    .AddRoles<IdentityRole<int>>()
+    .AddRoles<IdentityRole<Guid>>()
     .AddEntityFrameworkStores<DevopsDb>();
 
 // ─────  JWT  ────────────────────────────────────────────────────────────────────
@@ -109,10 +109,10 @@ await using (var scope = app.Services.CreateAsyncScope())
 // ─────  ROLE SEED  ──────────────────────────────────────────────────────────────
 await using (var scope = app.Services.CreateAsyncScope())
 {
-    var rm = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<int>>>();
+    var rm = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
     foreach (var r in new[] { "User", "Admin" })
         if (!await rm.RoleExistsAsync(r))
-            await rm.CreateAsync(new IdentityRole<int>(r));
+            await rm.CreateAsync(new IdentityRole<Guid>(r));
 }
 
 // ─────  PIPELINE  ───────────────────────────────────────────────────────────────
