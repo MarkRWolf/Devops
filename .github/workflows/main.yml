@@ -1,0 +1,68 @@
+# .github/workflows/main.yml
+name: Build and Deploy to Azure Container Apps
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  ACR_NAME: devopsdashboard.azurecr.io
+  SERVER_IMAGE_REPO: server
+  CLIENT_IMAGE_REPO: client
+
+  ACA_RESOURCE_GROUP: Devops-rg
+  SERVER_ACA_NAME: devopsserver
+  CLIENT_ACA_NAME: devopsclient
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Log in to Azure Container Registry
+        run: |
+          docker login ${{ env.ACR_NAME }} -u ${{ secrets.ACR_USERNAME }} -p ${{ secrets.ACR_PASSWORD }}
+
+      - name: Get current Git short SHA for image tag
+        id: git_sha
+        run: echo "SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Build and Push Server Image
+        run: |
+          docker build -t ${{ env.ACR_NAME }}/${{ env.SERVER_IMAGE_REPO }}:${{ env.SHA }} -f Devops/Dockerfile ./Devops
+          docker push ${{ env.ACR_NAME }}/${{ env.SERVER_IMAGE_REPO }}:${{ env.SHA }}
+          docker tag ${{ env.ACR_NAME }}/${{ env.SERVER_IMAGE_REPO }}:${{ env.SHA }} ${{ env.ACR_NAME }}/${{ env.SERVER_IMAGE_REPO }}:latest
+          docker push ${{ env.ACR_NAME }}/${{ env.SERVER_IMAGE_REPO }}:latest
+        working-directory: .
+
+      - name: Build and Push Client Image
+        run: |
+          docker build -t ${{ env.ACR_NAME }}/${{ env.CLIENT_IMAGE_REPO }}:${{ env.SHA }} -f client/Dockerfile ./client
+          docker push ${{ env.ACR_NAME }}/${{ env.CLIENT_IMAGE_REPO }}:${{ env.SHA }}
+          docker tag ${{ env.ACR_NAME }}/${{ env.CLIENT_IMAGE_REPO }}:${{ env.SHA }} ${{ env.ACR_NAME }}/${{ env.CLIENT_IMAGE_REPO }}:latest
+          docker push ${{ env.ACR_NAME }}/${{ env.CLIENT_IMAGE_REPO }}:latest
+        working-directory: .
+
+      - name: Deploy Server Container App
+        uses: azure/container-apps-deploy@v2
+        with:
+          resource-group: ${{ env.ACA_RESOURCE_GROUP }}
+          container-app-name: ${{ env.SERVER_ACA_NAME }}
+          image: ${{ env.ACR_NAME }}/${{ env.SERVER_IMAGE_REPO }}:latest
+
+      - name: Deploy Client Container App
+        uses: azure/container-apps-deploy@v2
+        with:
+          resource-group: ${{ env.ACA_RESOURCE_GROUP }}
+          container-app-name: ${{ env.CLIENT_ACA_NAME }}
+          image: ${{ env.ACR_NAME }}/${{ env.CLIENT_IMAGE_REPO }}:latest
