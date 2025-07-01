@@ -7,7 +7,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Hosting;
 
 [ApiController]
-[Route("api/account")]
+[Route("API/account")]
 public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEnvironment env) : ControllerBase
 {
     public record Req(string Email, string Password);
@@ -46,3 +46,4 @@ public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEn
         Email = User.FindFirstValue(ClaimTypes.Email),
     });
 }
+

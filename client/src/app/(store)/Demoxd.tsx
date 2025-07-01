@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { serverUrl } from "@/lib/settings";
 
 /* ──────────── Types ──────────── */
 interface User {
@@ -25,6 +24,7 @@ async function apiFetch<T>(
   input: RequestInfo,
   init?: RequestInit
 ): Promise<ApiResult<T> | ApiError> {
+  // Always make a relative fetch.
   const res = await fetch(input, { credentials: "include", cache: "no-store", ...init });
   if (!res.ok) {
     const msg = (await res.text()) || res.statusText;
@@ -37,12 +37,14 @@ async function apiFetch<T>(
 export default function Demo() {
   const [user, setUser] = useState<User | null>(null);
   const [me, setMe] = useState<User | null>(null);
+  const [healthStatus, setHealthStatus] = useState<string | null>(null); // New state for health
   const [err, setErr] = useState<string>("");
 
   async function signup() {
     setErr("");
     const email = `u${Math.floor(Math.random() * 1e6)}@demo.com`;
-    const res = await apiFetch<User>(`${serverUrl}/api/account/signup`, {
+    // Client always calls its own /api route
+    const res = await apiFetch<User>(`/api/account/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password: "Passw0rd!" }),
@@ -54,10 +56,23 @@ export default function Demo() {
 
   async function fetchMe() {
     setErr("");
-    const res = await apiFetch<User>(`${serverUrl}/api/account/me`);
+    // Client always calls its own /api route
+    const res = await apiFetch<User>(`/api/account/me`);
 
     if (res.ok) setMe(res.data);
     else setErr(res.message);
+  }
+
+  async function checkHealth() {
+    setErr("");
+    setHealthStatus(null);
+    const res = await fetch(`/api/health`, { cache: "no-store" }); // Direct fetch, no JSON expected
+    if (res.ok) {
+      setHealthStatus(`Health check OK (Status: ${res.status})`);
+    } else {
+      const msg = (await res.text()) || res.statusText;
+      setErr(`Health check failed: ${msg} (Status: ${res.status})`);
+    }
   }
 
   return (
@@ -67,6 +82,9 @@ export default function Demo() {
       <Button onClick={signup}>Sign-up (sets cookie)</Button>
       <Button variant="outline" onClick={fetchMe}>
         Call /me
+      </Button>
+      <Button variant="outline" onClick={checkHealth}>
+        Check Health (/api/health)
       </Button>
 
       {err && <p className="text-red-600">{err}</p>}
@@ -82,6 +100,8 @@ export default function Demo() {
           /me → {me.email} (id {me.id})
         </p>
       )}
+
+      {healthStatus && <p className="text-purple-600">{healthStatus}</p>}
     </main>
   );
 }

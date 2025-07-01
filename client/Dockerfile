@@ -11,6 +11,7 @@ RUN npm run build
 
 FROM node:22-alpine AS runner
 WORKDIR /app
+RUN apk add --no-cache curl
 COPY --from=builder /app/ ./
 RUN npm install --production --legacy-peer-deps
 EXPOSE 3000
