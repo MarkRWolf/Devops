@@ -78,7 +78,7 @@ export default function Demo() {
   return (
     <main className="text-center space-y-4 py-10">
       <h1 className="text-2xl font-bold">DevOps Demo</h1>
-
+      <h2>Hey guys</h2>
       <Button onClick={signup}>Sign-up (sets cookie)</Button>
       <Button variant="outline" onClick={fetchMe}>
         Call /me

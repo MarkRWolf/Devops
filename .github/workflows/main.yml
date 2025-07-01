@@ -4,7 +4,7 @@ name: Build and Deploy to Azure Container Apps
 on:
   push:
     branches:
-      - main
+      - main 
 
 env:
   ACR_NAME: devopsdashboard.azurecr.io
@@ -58,7 +58,7 @@ jobs:
         with:
           resourceGroup: ${{ env.ACA_RESOURCE_GROUP }}
           containerAppName: ${{ env.SERVER_ACA_NAME }}
-          imageToDeploy: ${{ env.ACR_NAME }}/${{ env.SERVER_IMAGE_REPO }}:latest
+          imageToDeploy: ${{ env.ACR_NAME }}/${{ env.SERVER_IMAGE_REPO }}:latest 
 
       - name: Deploy Client Container App
         uses: azure/container-apps-deploy-action@v1
