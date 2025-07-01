@@ -1,9 +1,8 @@
-// client/app/api/account/[...path]/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import applyRateLimit from "../../../../utils/rateLimit"; // Adjusted path to your utility
 
 const DOTNET_INTERNAL_API_BASE_URL = process.env.DOTNET_API_BASE_URL;
 
-// Add a startup log to confirm the env var is read
 console.log(`[ROUTE.TS STARTUP] DOTNET_API_BASE_URL: ${DOTNET_INTERNAL_API_BASE_URL}`);
 
 if (!DOTNET_INTERNAL_API_BASE_URL) {
@@ -11,16 +10,18 @@ if (!DOTNET_INTERNAL_API_BASE_URL) {
 }
 
 async function proxyRequest(request: NextRequest) {
-  // Add a log for every request received by this route
-  console.log(
-    `[ROUTE.TS REQUEST] Method: ${request.method}, Pathname: ${request.nextUrl.pathname}`
-  ); // Log the constructed backend path (BEFORE it's used to construct the final URL)
-  const pathSegments = request.nextUrl.pathname.split("/api/"); // <--- CHANGED THIS LINE
-  const backendPath = pathSegments.length > 1 ? pathSegments[1] : ""; // Renamed 'path' to 'backendPath' for clarity
+  const rateLimitResponse = await applyRateLimit(request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
 
   console.log(
-    `[ROUTE.TS REQUEST] Backend Path Segment: ${backendPath}` // <--- NEW LOG
+    `[ROUTE.TS REQUEST] Method: ${request.method}, Pathname: ${request.nextUrl.pathname}`
   );
+  const pathSegments = request.nextUrl.pathname.split("/api/");
+  const backendPath = pathSegments.length > 1 ? pathSegments[1] : "";
+
+  console.log(`[ROUTE.TS REQUEST] Backend Path Segment: ${backendPath}`);
 
   let requestBody: BodyInit | null = null;
   const queryStringToForward = "";
@@ -60,10 +61,10 @@ async function proxyRequest(request: NextRequest) {
   if (!DOTNET_INTERNAL_API_BASE_URL) {
     console.error("[ROUTE.TS ERROR] DOTNET_API_BASE_URL is undefined, cannot proxy request.");
     return new NextResponse("Server configuration error: Missing API URL.", { status: 500 });
-  } // CONSTRUCT THE CORRECT URL FOR THE .NET BACKEND
+  }
 
-  const url = new URL(`${DOTNET_INTERNAL_API_BASE_URL}/${backendPath}${queryStringToForward}`); // <--- CHANGED THIS LINE
-  console.log(`[ROUTE.TS FETCH] Attempting to fetch: ${url.toString()}`); // This is the new log you requested
+  const url = new URL(`${DOTNET_INTERNAL_API_BASE_URL}/${backendPath}${queryStringToForward}`);
+  console.log(`[ROUTE.TS FETCH] Attempting to fetch: ${url.toString()}`);
 
   try {
     const response = await fetch(url, {
