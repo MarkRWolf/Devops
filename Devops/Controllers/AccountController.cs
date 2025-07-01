@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Hosting;
 [Route("API/account")]
 public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEnvironment env) : ControllerBase
 {
-    public record Req(string Email, string Password);
+    public record Req(string Email, string Password, string UserName);
 
     private CookieOptions CookieOpts => new()
     {
@@ -23,10 +23,10 @@ public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEn
     [HttpPost("signup")]
     public async Task<IActionResult> Register([FromBody] Req r)
     {
-        var res = await auth.RegisterAsync(r.Email, r.Password);
+        var res = await auth.RegisterAsync(r.Email, r.Password, r.UserName);
         if (!res.Success) return Conflict("Email exists.");
         Response.Cookies.Append("TestToken", res.Token!, CookieOpts);
-        return Created("/api/account/me", new { res.User!.Id, res.User.Email });
+        return Created("/api/account/me", new { res.User!.Id, res.User.Email, res.User.UserName });
     }
 
     [HttpPost("login")]

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 interface User {
   id: number;
   email: string;
+  userName: string;
 }
 
 interface ApiResult<T> {
@@ -37,17 +38,19 @@ async function apiFetch<T>(
 export default function Demo() {
   const [user, setUser] = useState<User | null>(null);
   const [me, setMe] = useState<User | null>(null);
-  const [healthStatus, setHealthStatus] = useState<string | null>(null); // New state for health
+  const [healthStatus, setHealthStatus] = useState<string | null>(null);
   const [err, setErr] = useState<string>("");
 
   async function signup() {
     setErr("");
-    const email = `u${Math.floor(Math.random() * 1e6)}@demo.com`;
+    const rand = Math.floor(Math.random() * 1e6);
+    const email = `u${rand}@demo.com`;
+    const username = `USER${rand}`;
     // Client always calls its own /api route
     const res = await apiFetch<User>(`/api/account/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password: "Passw0rd!" }),
+      body: JSON.stringify({ email, password: "Passw0rd!", userName: username }),
     });
 
     if (res.ok) setUser(res.data);
@@ -91,7 +94,7 @@ export default function Demo() {
 
       {user && (
         <p className="text-green-600">
-          Signed-up: {user.email} (id {user.id})
+          Signed-up: {user.userName} {user.email} (id {user.id})
         </p>
       )}
 

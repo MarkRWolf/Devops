@@ -16,9 +16,9 @@ public sealed class AuthService : IAuthService
     public AuthService(UserManager<DevopsUser> um, IConfiguration cfg)
         => (_um, _cfg) = (um, cfg);
 
-    public async Task<LoginResult> RegisterAsync(string email, string pw)
+   public async Task<LoginResult> RegisterAsync(string email, string pw, string username)
     {
-        var user = new DevopsUser { UserName = email, Email = email };
+        var user = new DevopsUser { UserName = username, Email = email };
         var res = await _um.CreateAsync(user, pw);
         if (!res.Succeeded) return new(false, null, null);
 

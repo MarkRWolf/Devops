@@ -4,7 +4,7 @@ namespace Devops.Services.Interfaces;
 
 public interface IAuthService
 {
-    Task<LoginResult> RegisterAsync(string email, string password);
+    Task<LoginResult> RegisterAsync(string email, string password, string username);
     Task<LoginResult?> LoginAsync(string email, string password);
 }
 
