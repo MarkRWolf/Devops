@@ -4,7 +4,7 @@ name: Build and Deploy to Azure Container Apps
 on:
   push:
     branches:
-      - main
+      - ghmain
 
 env:
   ACR_NAME: devopsdashboard.azurecr.io
