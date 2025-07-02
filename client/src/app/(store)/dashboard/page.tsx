@@ -8,7 +8,7 @@ export default async function DashboardHome() {
   if (!user) {
     return (
       <main className="text-center space-y-4 py-10">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <h1 className="text-2xl font-bold">AZ Dashboard</h1>
         <p className="text-red-600">You are not logged in.</p>
       </main>
     );

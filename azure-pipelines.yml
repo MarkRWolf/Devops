@@ -2,7 +2,7 @@
 # Build and push both Server and Client images to Azure Container Registry
 
 trigger:
-  - main
+  - azmaster
 
 resources:
   - repo: self
