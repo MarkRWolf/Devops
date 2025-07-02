@@ -38,7 +38,7 @@ export default function LoginForm() {
         });
         router.push("/dashboard");
       }
-    } catch (err) {
+    } catch {
       setMessage({ type: "error", text: "Network error, try again" });
     } finally {
       setLoading(false);
