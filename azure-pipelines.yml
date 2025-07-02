@@ -22,7 +22,7 @@ variables:
   clientDockerfilePath: "$(Build.SourcesDirectory)/client/Dockerfile" # Client Dockerfile
   clientBuildContext: "$(Build.SourcesDirectory)/client" # Build context for the Client image
 
-  tag: "$(Build.BuildId)" # Unique tag for each build
+  tag: "$(Build.BuildId)"
 
   # Agent VM image name
   vmImageName: "ubuntu-latest"
