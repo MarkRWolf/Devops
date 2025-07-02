@@ -2,60 +2,60 @@
 # Build and push both Server and Client images to Azure Container Registry
 
 trigger:
-- main
+  - main
 
 resources:
-- repo: self
+  - repo: self
 
 variables:
   # Container registry service connection established during pipeline creation
-  dockerRegistryServiceConnection: 'ee2aa85b-89a3-47c9-b26b-b3c796e95bc0'
-  containerRegistry: 'devopsdashboard.azurecr.io' # Your ACR URL
+  dockerRegistryServiceConnection: "ee2aa85b-89a3-47c9-b26b-b3c796e95bc0"
+  containerRegistry: "devopsdashboard.azurecr.io" # Your ACR URL
 
   # Variables for the Server image
-  serverImageRepository: 'devopsserver'
-  serverDockerfilePath: '$(Build.SourcesDirectory)/Devops/Dockerfile' # Server Dockerfile
-  serverBuildContext: '$(Build.SourcesDirectory)/Devops' # Build context for the server image
+  serverImageRepository: "devopsserver"
+  serverDockerfilePath: "$(Build.SourcesDirectory)/Devops/Dockerfile" # Server Dockerfile
+  serverBuildContext: "$(Build.SourcesDirectory)/Devops" # Build context for the server image
 
   # Variables for the Client image
-  clientImageRepository: 'devopsclient'
-  clientDockerfilePath: '$(Build.SourcesDirectory)/client/Dockerfile' # Client Dockerfile
-  clientBuildContext: '$(Build.SourcesDirectory)/client' # Build context for the Client image
+  clientImageRepository: "devopsclient"
+  clientDockerfilePath: "$(Build.SourcesDirectory)/client/Dockerfile" # Client Dockerfile
+  clientBuildContext: "$(Build.SourcesDirectory)/client" # Build context for the Client image
 
-  tag: '$(Build.BuildId)' # Unique tag for each build
+  tag: "$(Build.BuildId)" # Unique tag for each build
 
   # Agent VM image name
-  vmImageName: 'ubuntu-latest'
+  vmImageName: "ubuntu-latest"
 
 stages:
-- stage: Build
-  displayName: Build and push images
-  jobs:
-  - job: Build
-    displayName: Build
-    pool:
-      vmImage: $(vmImageName)
-    steps:
-    - task: Docker@2
-      displayName: Build and push Server image
-      inputs:
-        command: buildAndPush
-        repository: $(serverImageRepository)
-        dockerfile: $(serverDockerfilePath)
-        buildContext: $(serverBuildContext)
-        containerRegistry: $(dockerRegistryServiceConnection)
-        tags: |
-          $(tag)
-          latest
+  - stage: Build
+    displayName: Build and push images
+    jobs:
+      - job: Build
+        displayName: Build
+        pool:
+          vmImage: $(vmImageName)
+        steps:
+          - task: Docker@2
+            displayName: Build and push Server image
+            inputs:
+              command: buildAndPush
+              repository: $(serverImageRepository)
+              dockerfile: $(serverDockerfilePath)
+              buildContext: $(serverBuildContext)
+              containerRegistry: $(dockerRegistryServiceConnection)
+              tags: |
+                $(tag)
+                latest
 
-    - task: Docker@2
-      displayName: Build and push Client image
-      inputs:
-        command: buildAndPush
-        repository: $(clientImageRepository)
-        dockerfile: $(clientDockerfilePath)
-        buildContext: $(clientBuildContext)
-        containerRegistry: $(dockerRegistryServiceConnection)
-        tags: |
-          $(tag)
-          latest
+          - task: Docker@2
+            displayName: Build and push Client image
+            inputs:
+              command: buildAndPush
+              repository: $(clientImageRepository)
+              dockerfile: $(clientDockerfilePath)
+              buildContext: $(clientBuildContext)
+              containerRegistry: $(dockerRegistryServiceConnection)
+              tags: |
+                $(tag)
+                latest

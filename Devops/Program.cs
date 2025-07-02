@@ -7,6 +7,7 @@ using Devops.Data;
 using Devops.Services;
 using Devops.Services.Interfaces;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
 var cfg = builder.Configuration;
@@ -22,6 +23,10 @@ svc.AddDbContext<DevopsDb>(o =>
 svc.AddIdentityCore<DevopsUser>(o => o.Password.RequireNonAlphanumeric = false)
     .AddRoles<IdentityRole<Guid>>()
     .AddEntityFrameworkStores<DevopsDb>();
+
+svc.AddDataProtection()
+    .SetApplicationName("Devops")
+    .PersistKeysToFileSystem(new DirectoryInfo("/app/dpkeys"));
 
 // ─────  JWT  ────────────────────────────────────────────────────────────────────
 var key = Encoding.UTF8.GetBytes(cfg["JwtSettings:Secret"]!);
@@ -87,6 +92,9 @@ svc.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 svc.AddAuthorization();
 svc.AddScoped<IAuthService, AuthService>();
+svc.AddScoped<IPatService, PatService>();
+svc.AddHttpClient();
+
 svc.AddControllers();
 
 svc.AddHealthChecks(); 

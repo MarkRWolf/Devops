@@ -26,12 +26,15 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__DevopsDB: Server=sqlserver;Database=DevopsDB;User Id=sa;Password=Strong!Passw0rd;TrustServerCertificate=True
     ports: ["8080:5205"]
+    volumes:
+      - devops_data_protection_keys:/app/dpkeys
 
   client:
     build: ./client
     depends_on: [server]
     environment:
       DOTNET_API_BASE_URL: http://server:5205/API
+      SELF_URL: http://localhost:3000
     ports: ["3001:3000"]
 
   proxy:
@@ -43,3 +46,4 @@ services:
 
 volumes:
   mssql-data:
+  devops_data_protection_keys:
