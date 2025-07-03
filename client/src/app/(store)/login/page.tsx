@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 import LoginForm from "@/components/LoginForm";
-import { checkUser } from "@/lib/helpers/UserHelpers";
+import { checkUser } from "@/lib/user/userHelpers";
 import { redirect } from "next/navigation";
 
 export default async function LoginPage() {

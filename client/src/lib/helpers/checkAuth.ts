@@ -1,5 +1,5 @@
 // @/lib/helpers/checkAuth.ts
-import { User } from "@/types/User";
+import { User } from "@/lib/user/user";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 

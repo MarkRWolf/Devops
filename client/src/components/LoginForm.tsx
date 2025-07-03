@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ZodError } from "zod";
+import { signupSchema, loginSchema } from "@/lib/user/userSchema";
 
 export default function LoginForm() {
   const [mode, setMode] = useState<"login" | "signup">("login");
@@ -17,8 +19,26 @@ export default function LoginForm() {
     setLoading(true);
     setMessage(null);
 
-    const url = mode === "login" ? "/api/account/login" : "/api/account/signup";
     const payload = mode === "login" ? { email, password } : { email, password, userName };
+
+    try {
+      if (mode === "signup") {
+        signupSchema.parse(payload);
+      } else {
+        loginSchema.parse(payload);
+      }
+    } catch (err) {
+      if (err instanceof ZodError) {
+        setMessage({
+          type: "error",
+          text: err.errors.map((e) => e.message).join("; "),
+        });
+        setLoading(false);
+        return;
+      }
+    }
+
+    const url = mode === "login" ? "/api/account/login" : "/api/account/signup";
 
     try {
       const res = await fetch(url, {
@@ -27,10 +47,13 @@ export default function LoginForm() {
         credentials: "include",
         body: JSON.stringify(payload),
       });
-
-      const data = await res.json();
+      const data: {errors?} = await res.json();
       if (!res.ok) {
-        setMessage({ type: "error", text: data.message || "Something went wrong" });
+        const errs: string[] | undefined = (data as any).errors;
+        const text = Array.isArray(errs)
+          ? errs.join("; ")
+          : (data as any).message || "Something went wrong";
+        setMessage({ type: "error", text });
       } else {
         setMessage({
           type: "success",
@@ -50,7 +73,6 @@ export default function LoginForm() {
       <h2 className="text-2xl font-bold text-center mb-4">
         {mode === "login" ? "Login" : "Sign Up"}
       </h2>
-
       {message && (
         <p
           className={`mb-4 p-2 rounded ${
@@ -60,7 +82,6 @@ export default function LoginForm() {
           {message.text}
         </p>
       )}
-
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="email" className="block font-medium">
@@ -75,7 +96,6 @@ export default function LoginForm() {
             className="mt-1 w-full px-3 py-2 border rounded"
           />
         </div>
-
         {mode === "signup" && (
           <div>
             <label htmlFor="username" className="block font-medium">
@@ -91,7 +111,6 @@ export default function LoginForm() {
             />
           </div>
         )}
-
         <div>
           <label htmlFor="password" className="block font-medium">
             Password
@@ -105,7 +124,6 @@ export default function LoginForm() {
             className="mt-1 w-full px-3 py-2 border rounded"
           />
         </div>
-
         <button
           type="submit"
           disabled={loading}
@@ -114,7 +132,6 @@ export default function LoginForm() {
           {loading ? "Please wait…" : mode === "login" ? "Login" : "Sign Up"}
         </button>
       </form>
-
       <p className="mt-4 text-center text-sm">
         {mode === "login" ? (
           <>
