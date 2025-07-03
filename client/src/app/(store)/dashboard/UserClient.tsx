@@ -2,19 +2,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { User } from "@/types/User";
+import { apiFetch } from "@/lib/helpers/fetchHelpers";
 
-interface ApiResult<T> {
-  ok: true;
-  data: T;
-}
-
-interface ApiError {
-  ok: false;
-  message: string;
-}
 const UserClient = (props: { user: User }) => {
-  const [me, setMe] = useState<User | null>(null);
-  const [healthStatus, setHealthStatus] = useState<string | null>(null);
+  const [me, setMe] = useState<User>(props.user);
+  const [healthStatus, setHealthStatus] = useState<string>("");
   const [err, setErr] = useState<string>("");
 
   async function fetchMe() {
@@ -28,7 +20,7 @@ const UserClient = (props: { user: User }) => {
 
   async function checkHealth() {
     setErr("");
-    setHealthStatus(null);
+    setHealthStatus("");
     const res = await fetch(`/api/health`, { cache: "no-store" });
     if (res.ok) {
       setHealthStatus(`Health check OK (Status: ${res.status})`);
@@ -38,19 +30,6 @@ const UserClient = (props: { user: User }) => {
     }
   }
 
-  /* ───────── helper ───────── */
-  async function apiFetch<T>(
-    input: RequestInfo,
-    init?: RequestInit
-  ): Promise<ApiResult<T> | ApiError> {
-    // Always make a relative fetch.
-    const res = await fetch(input, { credentials: "include", cache: "no-store", ...init });
-    if (!res.ok) {
-      const msg = (await res.text()) || res.statusText;
-      return { ok: false, message: msg };
-    }
-    return { ok: true, data: (await res.json()) as T };
-  }
   return (
     <main className="text-center space-y-4 py-10">
       <h1 className="text-2xl font-bold">DevOps Demo</h1>
