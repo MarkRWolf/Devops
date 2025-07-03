@@ -8,4 +8,4 @@ public interface IAuthService
     Task<LoginResult?> LoginAsync(string email, string password);
 }
 
-public record LoginResult(bool Success, DevopsUser? User, string? Token);
+public record LoginResult(bool Success, DevopsUser? User, string? Token, IEnumerable<string>? Errors = null);

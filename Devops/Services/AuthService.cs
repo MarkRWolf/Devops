@@ -20,13 +20,13 @@ public sealed class AuthService : IAuthService
     {
         var user = new DevopsUser { UserName = username, Email = email };
         var res = await _um.CreateAsync(user, pw);
-        if (!res.Succeeded) return new(false, null, null);
+        if (!res.Succeeded) return new(false, null, null, res.Errors.Select(e => e.Description));
 
         await _um.AddToRoleAsync(user, "User");
         var token = BuildJwt(user, await _um.GetRolesAsync(user));
         return new(true, user, token);
-    }
-
+    } 
+  
     public async Task<LoginResult?> LoginAsync(string email, string pw)
     {
         var user = await _um.FindByEmailAsync(email);
