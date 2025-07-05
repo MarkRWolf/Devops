@@ -2,13 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-
-/* ──────────── Types ──────────── */
-interface User {
-  id: number;
-  email: string;
-  userName: string;
-}
+import { User } from "@/lib/user/user";
 
 interface ApiResult<T> {
   ok: true;

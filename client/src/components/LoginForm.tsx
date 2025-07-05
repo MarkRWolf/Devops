@@ -1,24 +1,52 @@
 "use client";
 
-import { useState } from "react";
+import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { ZodError } from "zod";
+import { signupSchema, loginSchema } from "@/lib/user/userSchema";
+
+/* ─── minimal types ───────────────────────────────── */
+
+interface ApiErrorPayload {
+  errors?: string[];
+  message?: string;
+}
+
+type Toast = { type: "error" | "success"; text: string } | null;
+
+/* ─── component ───────────────────────────────────── */
 
 export default function LoginForm() {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [userName, setUserName] = useState("");
+  const [username, setUserName] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+  const [toast, setToast] = useState<Toast>(null);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
+
   const router = useRouter();
 
-  async function handleSubmit(e: React.FormEvent) {
+  /* ─── handlers ──────────────────────────────────── */
+
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
-    setMessage(null);
+
+    const payload = mode === "login" ? { email, password } : { email, password, username };
+
+    /* Zod validation */
+    try {
+      (mode === "signup" ? signupSchema : loginSchema).parse(payload);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        setFormError(err.errors.map((e) => e.message).join("; "));
+      }
+      setLoading(false);
+      return;
+    }
 
     const url = mode === "login" ? "/api/account/login" : "/api/account/signup";
-    const payload = mode === "login" ? { email, password } : { email, password, userName };
 
     try {
       const res = await fetch(url, {
@@ -28,22 +56,21 @@ export default function LoginForm() {
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
       if (!res.ok) {
-        setMessage({ type: "error", text: data.message || "Something went wrong" });
-      } else {
-        setMessage({
-          type: "success",
-          text: mode === "login" ? "Logged in!" : "Account created!",
-        });
-        router.push("/dashboard");
+        const data: ApiErrorPayload = await res.json();
+        const text = data.errors?.join("; ") || data.message || "Something went wrong";
+        setToast({ type: "error", text });
+        return;
       }
+      router.push("/dashboard");
     } catch {
-      setMessage({ type: "error", text: "Network error, try again" });
+      setToast({ type: "error", text: "Network error, try again" });
     } finally {
       setLoading(false);
     }
   }
+
+  /* ─── render ────────────────────────────────────── */
 
   return (
     <div className="max-w-md mx-auto p-6 bg-white shadow rounded">
@@ -51,17 +78,20 @@ export default function LoginForm() {
         {mode === "login" ? "Login" : "Sign Up"}
       </h2>
 
-      {message && (
+      {formError && <p className="mb-4 p-2 rounded bg-red-100 text-red-700">{formError}</p>}
+
+      {toast && (
         <p
           className={`mb-4 p-2 rounded ${
-            message.type === "error" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
+            toast.type === "error" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
           }`}
         >
-          {message.text}
+          {toast.text}
         </p>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Email */}
         <div>
           <label htmlFor="email" className="block font-medium">
             Email
@@ -76,6 +106,7 @@ export default function LoginForm() {
           />
         </div>
 
+        {/* Username (signup only) */}
         {mode === "signup" && (
           <div>
             <label htmlFor="username" className="block font-medium">
@@ -85,13 +116,14 @@ export default function LoginForm() {
               id="username"
               type="text"
               required
-              value={userName}
+              value={username}
               onChange={(e) => setUserName(e.target.value)}
               className="mt-1 w-full px-3 py-2 border rounded"
             />
           </div>
         )}
 
+        {/* Password */}
         <div>
           <label htmlFor="password" className="block font-medium">
             Password

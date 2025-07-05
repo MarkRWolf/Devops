@@ -1,5 +1,5 @@
 // @/lib/helpers/UserHelpers.ts
-import { User } from "@/types/User";
+import { User } from "@/lib/user/user";
 import { headers } from "next/headers";
 // REMOVED: import { redirect } from "next/navigation";
 

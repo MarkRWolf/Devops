@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Hosting;
 [Route("API/account")]
 public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEnvironment env) : ControllerBase
 {
-    public record SignupReq(string Email, string Password, string UserName);
+    public record SignupReq(string Email, string Password, string Username);
     public record Req(string Email, string Password);
 
     private CookieOptions CookieOpts => new()
@@ -24,14 +24,15 @@ public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEn
     [HttpPost("signup")]
         public async Task<IActionResult> Register([FromBody] SignupReq r)
         {
-            var res = await auth.RegisterAsync(r.Email, r.Password, r.UserName);
-            if (!res.Success)
+            var res = await auth.RegisterAsync(r.Email, r.Password, r.Username);
+            if (!res.Success || res.User is null)
                 return Conflict(new { errors = res.Errors });  
 
-            Response.Cookies.Append("TestToken", res.Token!, CookieOpts);
+            Response.Cookies.Append("DevopsUserToken", res.Token!, CookieOpts);
+            Console.WriteLine($"{res.User}");
             return CreatedAtAction(nameof(Me),
-                null,
-                new { res.User!.Id, res.User.Email, res.User.UserName });
+            null,
+            new { res.User.Id, res.User.Email });
         }
 
 
@@ -39,9 +40,9 @@ public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEn
     public async Task<IActionResult> Login([FromBody] Req r)
     {
         var res = await auth.LoginAsync(r.Email, r.Password);
-        if (res is null) return Unauthorized("Invalid credentials.");
-        Response.Cookies.Append("TestToken", res.Token!, CookieOpts);
-        return Ok(new { res.User!.Id, res.User.Email });
+        if (res is null || res.User is null) return Unauthorized("Invalid credentials.");
+        Response.Cookies.Append("DevopsUserToken", res.Token!, CookieOpts);
+        return Ok(new { res.User.Id, res.User.Email });
     }
 
     [Authorize]

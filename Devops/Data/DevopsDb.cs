@@ -9,5 +9,14 @@ public class DevopsDb : IdentityDbContext<DevopsUser, IdentityRole<Guid>, Guid>
 {
     public DevopsDb(DbContextOptions<DevopsDb> options) : base(options) { }
 
-    
+    protected override void OnModelCreating(ModelBuilder b)
+    {
+        base.OnModelCreating(b);
+        b.Entity<DevopsUser>(u =>
+        {
+            u.Property(e => e.Email).IsRequired();
+            u.HasIndex(e => e.Email).IsUnique();
+            u.Property(e => e.UserName).IsRequired();
+        });
+    }
 }
