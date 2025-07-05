@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const backend = process.env.DOTNET_API_BASE_URL!;
-if (!backend) throw new Error("DOTNET_API_BASE_URL missing");
-
 function copyHeaders(h: Headers, extra: Record<string, string> = {}) {
   const out = new Headers(h);
   Object.entries(extra).forEach(([k, v]) => out.set(k, v));
@@ -12,6 +9,9 @@ function copyHeaders(h: Headers, extra: Record<string, string> = {}) {
 
 export function makeDotnetProxy() {
   return async function handler(req: NextRequest) {
+    const backend = process.env.DOTNET_API_BASE_URL;
+    if (!backend) throw new Error("DOTNET_API_BASE_URL is not set");
+
     const path = req.nextUrl.pathname.replace(/^\/api\//, "");
     const url = `${backend}/${path}${req.nextUrl.search}`;
 
