@@ -8,12 +8,13 @@ using Devops.Services;
 using Devops.Services.Interfaces;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.DataProtection;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 var cfg = builder.Configuration;
 var svc = builder.Services;
 
-Console.WriteLine("SERVER: Application builder created.");
+Console.WriteLine("KESTREL: Application builder created.");
 
 // ─────  DATABASE  ───────────────────────────────────────────────────────────────
 svc.AddDbContext<DevopsDb>(o =>
@@ -37,7 +38,7 @@ svc.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             OnMessageReceived = ctx =>
             {
-                if (ctx.Request.Cookies.TryGetValue("TestToken", out var tok))
+                if (ctx.Request.Cookies.TryGetValue("DevopsUserToken", out var tok))
                 {
                    Console.WriteLine($"TOKEN: {tok}");
                    ctx.Token = tok;
@@ -95,12 +96,22 @@ svc.AddScoped<IAuthService, AuthService>();
 svc.AddScoped<IPatService, PatService>();
 svc.AddHttpClient();
 
-svc.AddControllers();
+builder.Services.AddControllers()
+       .AddJsonOptions(o =>
+           o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
 
 svc.AddHealthChecks(); 
 
+svc.Configure<IdentityOptions>(o =>
+{
+    o.User.RequireUniqueEmail = true;
+});
+
+
+builder.WebHost.ConfigureKestrel(o => o.AddServerHeader = false);
+
 var app = builder.Build();
-Console.WriteLine("SERVER: Application building complete, starting to run...");
+Console.WriteLine("KESTREL: Application building complete, starting to run...");
 
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {

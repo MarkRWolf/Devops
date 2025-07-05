@@ -24,16 +24,16 @@ public sealed class AuthService : IAuthService
 
         await _um.AddToRoleAsync(user, "User");
         var token = BuildJwt(user, await _um.GetRolesAsync(user));
-        return new(true, user, token);
+        return new(true, user.ToPublic(), token);
     } 
   
-    public async Task<LoginResult?> LoginAsync(string email, string pw)
+    public async Task<LoginResult> LoginAsync(string email, string pw)
     {
         var user = await _um.FindByEmailAsync(email);
-        if (user is null || !await _um.CheckPasswordAsync(user, pw)) return null;
+        if (user is null || !await _um.CheckPasswordAsync(user, pw)) return new(false, null, null, ["Invalid credentials."]);
 
         var token = BuildJwt(user, await _um.GetRolesAsync(user));
-        return new(true, user, token);
+        return new(true, user.ToPublic(), token);
     }
 
     private string BuildJwt(DevopsUser u, IList<string> roles)
@@ -45,7 +45,8 @@ public sealed class AuthService : IAuthService
 
         var claims = new List<Claim> {
         new("id",    u.Id.ToString()),
-        new("email", u.Email!)
+        new("email", u.Email),
+        new("username", u.UserName),
     };
         claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
 

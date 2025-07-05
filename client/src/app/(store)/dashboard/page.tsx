@@ -8,7 +8,7 @@ export default async function DashboardHome() {
   return (
     <div>
       <h1 className="text-center text-xl font-bold">Dashboard</h1>
-      <h2>{user.userName}</h2>
+      <h2>{user.username}</h2>
       <UserMain user={user} />
     </div>
   );
