@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
-function copyHeaders(h: Headers, extra: Record<string, string> = {}) {
-  const out = new Headers(h);
+function copyHeaders(src: Headers, extra: Record<string, string> = {}) {
+  const out = new Headers();
+
+  src.forEach((v, k) => {
+    const lower = k.toLowerCase();
+    if (["host", "connection", "content-length"].includes(lower)) return; // drop
+    out.set(k, v);
+  });
+
   Object.entries(extra).forEach(([k, v]) => out.set(k, v));
-  out.delete("x-powered-by");
   return out;
 }
 
