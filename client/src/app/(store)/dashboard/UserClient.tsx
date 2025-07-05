@@ -13,7 +13,7 @@ interface ApiError {
   message: string;
 }
 const UserClient = (props: { user: User }) => {
-  const [me, setMe] = useState<User | null>(null);
+  const [me, setMe] = useState<User>(props.user);
   const [healthStatus, setHealthStatus] = useState<string | null>(null);
   const [err, setErr] = useState<string>("");
 
