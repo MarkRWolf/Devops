@@ -5,7 +5,7 @@ function copyHeaders(src: Headers, extra: Record<string, string> = {}) {
 
   src.forEach((v, k) => {
     const lower = k.toLowerCase();
-    if (["host", "connection", "content-length"].includes(lower)) return; // drop
+    if (["host", "connection"].includes(lower)) return;
     out.set(k, v);
   });
 
