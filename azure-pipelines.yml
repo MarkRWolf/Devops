@@ -1,5 +1,5 @@
-# Docker
-# Build and push both Server and Client images to Azure Container Registry
+# azure-pipelines.yml
+# CI/CD: build images, push to ACR, then point Container Apps at the new tag
 
 trigger:
   - azmaster
@@ -8,36 +8,38 @@ resources:
   - repo: self
 
 variables:
-  # Container registry service connection established during pipeline creation
+  # ACR / service-connection
   dockerRegistryServiceConnection: "ee2aa85b-89a3-47c9-b26b-b3c796e95bc0"
-  containerRegistry: "devopsdashboard.azurecr.io" # Your ACR URL
+  containerRegistry: "devopsdashboard.azurecr.io"
 
-  # Variables for the Server image
+  # image / build paths
   serverImageRepository: "devopsserver"
-  serverDockerfilePath: "$(Build.SourcesDirectory)/Devops/Dockerfile" # Server Dockerfile
-  serverBuildContext: "$(Build.SourcesDirectory)/Devops" # Build context for the server image
-
-  # Variables for the Client image
   clientImageRepository: "devopsclient"
-  clientDockerfilePath: "$(Build.SourcesDirectory)/client/Dockerfile" # Client Dockerfile
-  clientBuildContext: "$(Build.SourcesDirectory)/client" # Build context for the Client image
+  serverDockerfilePath: "$(Build.SourcesDirectory)/Devops/Dockerfile"
+  clientDockerfilePath: "$(Build.SourcesDirectory)/client/Dockerfile"
+  serverBuildContext: "$(Build.SourcesDirectory)/Devops"
+  clientBuildContext: "$(Build.SourcesDirectory)/client"
 
-  tag: "$(Build.BuildId)"
-
-  # Agent VM image name
+  tag: "$(Build.BuildId)" # unique tag every run
   vmImageName: "ubuntu-latest"
 
+  # ACA deployment targets
+  azureServiceConnection: "ee2aa85b-89a3-47c9-b26b-b3c796e95bc0"
+  resourceGroup: "rg-devops"
+  clientAppName: "devopsclient"
+  serverAppName: "devopsserver"
+
 stages:
+  # ───────────────────────────────────────── Build & Push ─────────────────────────────────────────
   - stage: Build
     displayName: Build and push images
     jobs:
       - job: Build
-        displayName: Build
         pool:
           vmImage: $(vmImageName)
         steps:
           - task: Docker@2
-            displayName: Build and push Server image
+            displayName: Build & push server
             inputs:
               command: buildAndPush
               repository: $(serverImageRepository)
@@ -49,7 +51,7 @@ stages:
                 latest
 
           - task: Docker@2
-            displayName: Build and push Client image
+            displayName: Build & push client
             inputs:
               command: buildAndPush
               repository: $(clientImageRepository)
@@ -59,3 +61,36 @@ stages:
               tags: |
                 $(tag)
                 latest
+
+  # ───────────────────────────────────────── Deploy / Roll ACA ────────────────────────────────────
+  - stage: Deploy
+    displayName: Update Container Apps
+    dependsOn: Build
+    jobs:
+      - job: RollRevisions
+        pool:
+          vmImage: $(vmImageName)
+        steps:
+          - task: AzureCLI@2
+            displayName: Update CLIENT app
+            inputs:
+              azureSubscription: $(azureServiceConnection)
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                az containerapp update \
+                  --name $(clientAppName) \
+                  --resource-group $(resourceGroup) \
+                  --image $(containerRegistry)/$(clientImageRepository):$(tag)
+
+          - task: AzureCLI@2
+            displayName: Update SERVER app
+            inputs:
+              azureSubscription: $(azureServiceConnection)
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                az containerapp update \
+                  --name $(serverAppName) \
+                  --resource-group $(resourceGroup) \
+                  --image $(containerRegistry)/$(serverImageRepository):$(tag)
