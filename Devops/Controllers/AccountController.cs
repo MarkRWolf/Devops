@@ -30,9 +30,7 @@ public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEn
 
             Response.Cookies.Append("DevopsUserToken", res.Token!, CookieOpts);
             Console.WriteLine($"{res.User}");
-            return CreatedAtAction(nameof(Me),
-            null,
-            new { res.User.Id, res.User.Email });
+            return StatusCode(201, new { User = res.User, Message = "User registered successfully." });
         }
 
 
@@ -42,7 +40,7 @@ public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEn
         var res = await auth.LoginAsync(r.Email, r.Password);
         if (res is null || res.User is null) return Unauthorized("Invalid credentials.");
         Response.Cookies.Append("DevopsUserToken", res.Token!, CookieOpts);
-        return Ok(new { res.User.Id, res.User.Email });
+        return Ok(new { res.User, Message = "Login successful." });
     }
 
     [Authorize]
