@@ -1,5 +1,4 @@
-# azure-pipelines.yml
-# CI/CD: build images, push to ACR, then point Container Apps at the new tag
+# azure-pipelines.yml  (working version)
 
 trigger:
   - azmaster
@@ -8,11 +7,14 @@ resources:
   - repo: self
 
 variables:
-  # ACR / service-connection
+  # registry connection (Docker@2)
   dockerRegistryServiceConnection: "ee2aa85b-89a3-47c9-b26b-b3c796e95bc0"
   containerRegistry: "devopsdashboard.azurecr.io"
 
-  # image / build paths
+  # ARM connection (AzureCLI@2)  ← NEW
+  armServiceConnection: "devops-aca-rg"
+
+  # image / paths
   serverImageRepository: "devopsserver"
   clientImageRepository: "devopsclient"
   serverDockerfilePath: "$(Build.SourcesDirectory)/Devops/Dockerfile"
@@ -20,23 +22,21 @@ variables:
   serverBuildContext: "$(Build.SourcesDirectory)/Devops"
   clientBuildContext: "$(Build.SourcesDirectory)/client"
 
-  tag: "$(Build.BuildId)" # unique tag every run
+  tag: "$(Build.BuildId)"
   vmImageName: "ubuntu-latest"
 
-  # ACA deployment targets
-  azureServiceConnection: "ee2aa85b-89a3-47c9-b26b-b3c796e95bc0"
+  # ACA targets
   resourceGroup: "rg-devops"
   clientAppName: "devopsclient"
   serverAppName: "devopsserver"
 
 stages:
-  # ───────────────────────────────────────── Build & Push ─────────────────────────────────────────
+  # ───── Build & push ─────
   - stage: Build
     displayName: Build and push images
     jobs:
       - job: Build
-        pool:
-          vmImage: $(vmImageName)
+        pool: { vmImage: $(vmImageName) }
         steps:
           - task: Docker@2
             displayName: Build & push server
@@ -62,19 +62,18 @@ stages:
                 $(tag)
                 latest
 
-  # ───────────────────────────────────────── Deploy / Roll ACA ────────────────────────────────────
+  # ───── Deploy ─────
   - stage: Deploy
     displayName: Update Container Apps
     dependsOn: Build
     jobs:
       - job: RollRevisions
-        pool:
-          vmImage: $(vmImageName)
+        pool: { vmImage: $(vmImageName) }
         steps:
           - task: AzureCLI@2
             displayName: Update CLIENT app
             inputs:
-              azureSubscription: $(azureServiceConnection)
+              azureSubscription: $(armServiceConnection) # ← ARM conn
               scriptType: bash
               scriptLocation: inlineScript
               inlineScript: |
@@ -86,7 +85,7 @@ stages:
           - task: AzureCLI@2
             displayName: Update SERVER app
             inputs:
-              azureSubscription: $(azureServiceConnection)
+              azureSubscription: $(armServiceConnection) # ← ARM conn
               scriptType: bash
               scriptLocation: inlineScript
               inlineScript: |
