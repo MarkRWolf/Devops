@@ -3,12 +3,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { User } from "@/lib/user/user";
 import { apiFetch } from "@/lib/helpers/fetchHelpers";
+import { useRouter } from "next/navigation";
 
 const UserClient = (props: { user: User }) => {
   const [me, setMe] = useState<User>(props.user);
   const [healthStatus, setHealthStatus] = useState<string>("");
   const [err, setErr] = useState<string>("");
-
+  const router = useRouter();
   async function fetchMe() {
     setErr("");
     // Client always calls its own /api route
@@ -30,6 +31,21 @@ const UserClient = (props: { user: User }) => {
     }
   }
 
+  async function logout() {
+    setErr("");
+    await fetch(`/api/account/logout`, {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+    })
+      .then(() => {
+        router.push("/login");
+      })
+      .catch(() => {
+        setErr("Logout failed. Likely a network error.");
+      });
+  }
+
   return (
     <main className="text-center space-y-4 py-10">
       <h1 className="text-2xl font-bold">DevOps Demo</h1>
@@ -39,6 +55,9 @@ const UserClient = (props: { user: User }) => {
       </Button>
       <Button variant="outline" onClick={checkHealth}>
         Check Health (/api/health)
+      </Button>
+      <Button variant="outline" onClick={logout}>
+        Logout
       </Button>
 
       {err && <p className="text-red-600">{err}</p>}
