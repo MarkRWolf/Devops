@@ -85,7 +85,7 @@ stages:
           - task: AzureCLI@2
             displayName: Update SERVER app
             inputs:
-              azureSubscription: $(armServiceConnection) # ← ARM conn
+              azureSubscription: $(armServiceConnection) # ← ARM connection
               scriptType: bash
               scriptLocation: inlineScript
               inlineScript: |
