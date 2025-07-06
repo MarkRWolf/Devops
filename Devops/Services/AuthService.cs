@@ -45,8 +45,8 @@ public sealed class AuthService : IAuthService
 
         var claims = new List<Claim> {
         new("id",    u.Id.ToString()),
-        new("email", u.Email),
-        new("username", u.UserName),
+        new("email", u.Email!),
+        new("username", u.UserName!),
     };
         claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
 
