@@ -29,8 +29,7 @@ public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEn
                 return Conflict(new { errors = res.Errors });  
 
             Response.Cookies.Append("DevopsUserToken", res.Token!, CookieOpts);
-            Console.WriteLine($"{res.User}");
-            return StatusCode(201, new { User = res.User, Message = "User registered successfully." });
+            return StatusCode(201, new { res.User, Message = "User registered successfully." });
         }
 
 
