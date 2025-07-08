@@ -20,7 +20,7 @@ Console.WriteLine("KESTREL: Application builder created.");
 svc.AddDbContext<DevopsDb>(o =>
     o.UseSqlServer(cfg.GetConnectionString("DevopsDB")));
 
-// ─────  IDENTITY  ───────────────────────────────────────────────────────────────
+// ─────  IDENTITY  ────────────────────────────────────    ───────────────────────────
 svc.AddIdentityCore<DevopsUser>(o => o.Password.RequireNonAlphanumeric = false)
     .AddRoles<IdentityRole<Guid>>()
     .AddEntityFrameworkStores<DevopsDb>();

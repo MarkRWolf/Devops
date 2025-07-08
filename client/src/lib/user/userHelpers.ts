@@ -1,7 +1,6 @@
 // @/lib/helpers/UserHelpers.ts
 import { User } from "@/lib/user/user";
 import { headers } from "next/headers";
-// REMOVED: import { redirect } from "next/navigation";
 
 export const checkUser = async (): Promise<User | null> => {
   const baseUrl = process.env.SELF_URL;
@@ -10,7 +9,7 @@ export const checkUser = async (): Promise<User | null> => {
     console.error(
       "Application configuration error: SELF_URL environment variable is not set for checkUser."
     );
-    return null; // Return null if config is missing
+    return null;
   }
 
   const cookieHeader = (await headers()).get("cookie");
@@ -23,21 +22,11 @@ export const checkUser = async (): Promise<User | null> => {
       },
       cache: "no-store",
     });
+    
+    return res.ok ? await res.json() : null;
 
-    if (res.status === 401) {
-      return null; // NO REDIRECT. Just return null for unauthorized.
-    }
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error(
-        `Error from Next.js proxy route (${res.status} ${res.statusText}): ${errorText}`
-      );
-      return null; // NO REDIRECT. Return null for other non-OK responses.
-    }
-
-    return (await res.json()) as User;
   } catch (error) {
     console.error("Error calling Next.js API proxy from checkUser:", error);
-    return null; // NO REDIRECT. Return null on network errors.
+    return null;
   }
 };

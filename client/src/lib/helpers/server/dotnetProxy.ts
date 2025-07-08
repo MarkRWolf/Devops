@@ -21,16 +21,22 @@ export function makeDotnetProxy() {
     const path = req.nextUrl.pathname.replace(/^\/api\//, "");
     const url = `${backend}/${path}${req.nextUrl.search}`;
 
-    const res = await fetch(url, {
-      method: req.method,
-      headers: copyHeaders(req.headers),
-      cache: "no-store",
-      redirect: "manual",
-      ...(!["GET", "HEAD"].includes(req.method) && {
-        body: req.body,
-        duplex: "half",
-      }),
-    });
+    let res: Response | undefined;
+    try {
+      res = await fetch(url, {
+        method: req.method,
+        headers: copyHeaders(req.headers),
+        cache: "no-store",
+        redirect: "manual",
+        ...(!["GET", "HEAD"].includes(req.method) && {
+          body: req.body,
+          duplex: "half",
+        }),
+      });
+    } catch (err) {
+      console.log("Internal server error:", err);
+      return new NextResponse("Internal server error", { status: 500 });
+    }
 
     return new NextResponse(res.body, {
       status: res.status,
