@@ -94,7 +94,9 @@ svc.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 svc.AddAuthorization();
 svc.AddScoped<IAuthService, AuthService>();
 svc.AddScoped<IPatService, PatService>();
+svc.AddScoped<IGitHubService, GitHubService>();
 svc.AddHttpClient();
+svc.AddLogging(); 
 
 builder.Services.AddControllers()
        .AddJsonOptions(o =>

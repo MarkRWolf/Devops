@@ -1,118 +1,108 @@
-// Devops/Devops.Services/PatService.cs
 namespace Devops.Services;
 
-using Microsoft.AspNetCore.Identity;
 using Devops.Data;
 using Devops.Services.Interfaces;
-using System.Text;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using System.Net.Http.Headers;
-using System.Net.Http; 
+using System.Net.Http;
+using Microsoft.Extensions.Logging;
 
-public class PatService : IPatService
+public sealed class PatService : IPatService
 {
-    private readonly UserManager<DevopsUser> _userManager;
-    private readonly HttpClient _httpClient;
-    private readonly IDataProtector _dataProtector;
+    private readonly DevopsDb _db;
+    private readonly IDataProtectionProvider _dpProvider;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILogger<PatService> _logger;
 
-    public PatService(
-        UserManager<DevopsUser> userManager,
-        HttpClient httpClient,
-        IDataProtectionProvider dataProtectionProvider)
+    public PatService(DevopsDb db, IDataProtectionProvider dpProvider, IHttpClientFactory httpClientFactory, ILogger<PatService> logger)
     {
-        _userManager = userManager;
-        _httpClient = httpClient;
-        _dataProtector = dataProtectionProvider.CreateProtector("PatProtection");
+        _db = db;
+        _dpProvider = dpProvider;
+        _httpClientFactory = httpClientFactory;
+        _logger = logger;
     }
 
-    public async Task<(bool isValid, string? errorMessage)> ValidateAndStorePat(string userId, string pat, string patType)
+    private IDataProtector GetProtector() => _dpProvider.CreateProtector("GitHubPatProtection");
+
+    public async Task<(bool Success, string? Error)> StoreGitHubPatAsync(Guid userId, string pat)
     {
-        var (isValid, errorMessage) = (false, "Unsupported PAT type.");
-
-        if (patType.Equals("github", StringComparison.OrdinalIgnoreCase))
+        if (!await IsGitHubPatValidAsync(pat))
         {
-            (isValid, errorMessage) = await ValidateGitHubPat(pat);
-        }
-        else if (patType.Equals("azuredevops", StringComparison.OrdinalIgnoreCase))
-        {
-            (isValid, errorMessage) = await ValidateAzureDevOpsPat(pat);
+            return (false, "Invalid GitHub PAT. Please check your token and its permissions.");
         }
 
-        if (!isValid) return (false, errorMessage);
+        var protector = GetProtector();
+        var encryptedPat = protector.Protect(pat);
 
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user == null) return (false, "User not found.");
-
-        var encryptedPat = _dataProtector.Protect(pat);
-
-        if (patType.Equals("github", StringComparison.OrdinalIgnoreCase))
+        var user = await _db.Users.FindAsync(userId);
+        if (user == null)
         {
-            user.EncryptedGitHubPat = encryptedPat;
-        }
-        else if (patType.Equals("azuredevops", StringComparison.OrdinalIgnoreCase))
-        {
-            user.EncryptedAzureDevOpsToken = encryptedPat;
+            return (false, "User not found.");
         }
 
-        var result = await _userManager.UpdateAsync(user);
-        if (!result.Succeeded) return (false, "Failed to save PAT.");
-
+        user.EncryptedGitHubPat = encryptedPat;
+        await _db.SaveChangesAsync();
         return (true, null);
     }
 
-    private async Task<(bool isValid, string? errorMessage)> ValidateGitHubPat(string pat)
+    public async Task<string?> GetDecryptedGitHubPatAsync(Guid userId)
     {
-        try
+        var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
+        if (user?.EncryptedGitHubPat == null)
         {
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Token", pat);
-            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("DevopsMonitoringDashboard");
+            return null;
+        }
 
-            var response = await _httpClient.GetAsync("https://api.github.com/user");
-            if (response.IsSuccessStatusCode)
-            {
-                return (true, null);
-            }
-            else
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                return (false, $"GitHub PAT validation failed: {response.ReasonPhrase} - {errorContent}");
-            }
-        }
-        catch (HttpRequestException ex)
-        {
-            return (false, $"Network error during GitHub PAT validation: {ex.Message}");
-        }
-        catch (Exception ex)
-        {
-            return (false, $"Error validating GitHub PAT: {ex.Message}");
-        }
+        var protector = GetProtector();
+        return protector.Unprotect(user.EncryptedGitHubPat);
     }
 
-    private async Task<(bool isValid, string? errorMessage)> ValidateAzureDevOpsPat(string pat)
+    public async Task<bool> IsGitHubPatValidAsync(string pat)
     {
         try
         {
-            var authToken = Convert.ToBase64String(Encoding.ASCII.GetBytes($":{pat}"));
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authToken);
+            var client = _httpClientFactory.CreateClient();
+            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("DevOpsDashboard", "1.0"));
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("token", pat);
 
-            var response = await _httpClient.GetAsync("https://app.vssps.visualstudio.com/_apis/profile/profiles/me?api-version=6.0");
-            if (response.IsSuccessStatusCode)
-            {
-                return (true, null);
-            }
-            else
+            var response = await client.GetAsync("https://api.github.com/user");
+
+            if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
-                return (false, $"Azure DevOps PAT validation failed: {response.ReasonPhrase} - {errorContent}");
+                _logger.LogWarning("GitHub PAT validation failed. Status: {StatusCode}, Content: {ErrorContent}", response.StatusCode, errorContent);
+
+                try
+                {
+                    using JsonDocument doc = JsonDocument.Parse(errorContent);
+                    if (doc.RootElement.TryGetProperty("message", out JsonElement messageElement))
+                    {
+                        var errorMessage = messageElement.GetString();
+                        if (errorMessage != null && errorMessage.Contains("Bad credentials", StringComparison.OrdinalIgnoreCase))
+                        {
+                            return false;
+                        }
+                    }
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogDebug(ex, "Could not parse GitHub API error response as JSON for PAT validation.");
+                }
+                return false;
             }
+            return true;
         }
         catch (HttpRequestException ex)
         {
-            return (false, $"Network error during Azure DevOps PAT validation: {ex.Message}");
+            _logger.LogError(ex, "Network error during GitHub PAT validation.");
+            return false;
         }
         catch (Exception ex)
         {
-            return (false, $"Error validating Azure DevOps PAT: {ex.Message}");
+            _logger.LogError(ex, "An unexpected error occurred during GitHub PAT validation.");
+            return false;
         }
     }
 }

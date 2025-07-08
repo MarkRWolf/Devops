@@ -5,10 +5,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Hosting;
+using Devops.Data;
+using Microsoft.AspNetCore.Identity;
 
 [ApiController]
 [Route("API/account")]
-public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEnvironment env) : ControllerBase
+public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEnvironment env, UserManager<DevopsUser> userManager) : ControllerBase
 {
     public record SignupReq(string Email, string Password, string Username);
     public record Req(string Email, string Password);
@@ -44,10 +46,18 @@ public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEn
 
     [Authorize]
     [HttpGet("me")]
-    public IActionResult Me() => Ok(new
+    public async Task<ActionResult<DevopsUser.Public>> Me()
     {
-        Id = User.FindFirstValue("id"),
-        Email = User.FindFirstValue(ClaimTypes.Email),
-    });
+        var userIdClaim = User.FindFirstValue("id");
+        if(!Guid.TryParse(userIdClaim, out var userId)) return Unauthorized("Invalid user ID.");        
+
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user == null)
+        {
+            return NotFound("User not found.");
+        }
+
+        return Ok(user.ToPublic());
+    }
 }
 
