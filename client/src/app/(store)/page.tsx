@@ -32,6 +32,10 @@ export default async function Home() {
     <div className="flex flex-col items-center gap-4 mt-8">
       <h1 className="text-xl">Welcome to my Devops Dashboard</h1>
 
+      <BetterLink href="/login">
+        <Button variant="outline">Login</Button>
+      </BetterLink>
+
       {projectWorkflowRuns.length > 0 && (
         <div className="mt-4 w-full max-w-2xl">
           <h2 className="text-lg font-semibold mb-4">Latest Project Workflow Runs:</h2>
@@ -50,10 +54,6 @@ export default async function Home() {
           `GitHub:ProjectOwnerRepo` and `GitHub:ProjectPat` configured.
         </p>
       )}
-
-      <BetterLink href="/login">
-        <Button variant="outline">Login</Button>
-      </BetterLink>
     </div>
   );
 }
