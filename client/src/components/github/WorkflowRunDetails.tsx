@@ -39,11 +39,23 @@ const WorkflowRunDetails: React.FC<WorkflowRunDetailsProps> = ({ run }) => {
           );
         }
 
-        const jobsData: { jobs: GitHubJob[] } = await jobsRes.json();
-        const artifactsData: { artifacts: GitHubArtifact[] } = await artifactsRes.json();
+        const jobsJson = await jobsRes.json();
+        const artifactsJson = await artifactsRes.json();
 
-        setJobs(jobsData.jobs || []);
-        setArtifacts(artifactsData.artifacts || []);
+        const jobsArr: GitHubJob[] = Array.isArray(jobsJson)
+          ? jobsJson
+          : Array.isArray(jobsJson.jobs)
+          ? jobsJson.jobs
+          : [];
+
+        const artifactsArr: GitHubArtifact[] = Array.isArray(artifactsJson)
+          ? artifactsJson
+          : Array.isArray(artifactsJson.artifacts)
+          ? artifactsJson.artifacts
+          : [];
+
+        setJobs(jobsArr);
+        setArtifacts(artifactsArr);
       } catch (err: unknown) {
         console.error("Error fetching run details:", err);
         setError(err instanceof Error ? err.message : "Failed to load run details.");
