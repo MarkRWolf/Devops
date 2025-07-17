@@ -2,11 +2,10 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { User } from "@/lib/user/user";
+import { baseUrl } from "../settings";
 
 export async function checkAuth(): Promise<User> {
-  const base = process.env.SELF_URL ?? "http://localhost:3000";
-
-  const res = await fetch(`${base}/api/account/me`, {
+  const res = await fetch(`${baseUrl}/api/account/me`, {
     headers: { cookie: (await cookies()).toString() },
     cache: "no-store",
   });

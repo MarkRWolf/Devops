@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Devops.Migrations
 {
     [DbContext(typeof(DevopsDb))]
-    [Migration("20250705171519_UserFix")]
-    partial class UserFix
+    [Migration("20250717005544_Init2")]
+    partial class Init2
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
