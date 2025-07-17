@@ -14,7 +14,7 @@ using System.Net;
 public sealed class GitHubService : IGitHubService
 {
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly IPatService _patService; // Keep for existing user-specific methods
+    private readonly IPatService _patService; 
     private readonly ILogger<GitHubService> _logger;
 
     public GitHubService(IHttpClientFactory httpClientFactory, IPatService patService, ILogger<GitHubService> logger)
@@ -274,44 +274,55 @@ public sealed class GitHubService : IGitHubService
     }
 
     public async Task<GitHubFileContent?> DownloadSpecificArtifactWithPatAsync(string owner, string repo, long artifactId, string pat)
+{
+    using var client = CreateGitHubClient(pat);
+    var url = $"https://api.github.com/repos/{owner}/{repo}/actions/artifacts/{artifactId}/zip";
+    try
     {
-        using var client = CreateGitHubClient(pat);
-        var url = $"https://api.github.com/repos/{owner}/{repo}/actions/artifacts/{artifactId}/zip";
-        try
+        var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+
+        // GitHub normally responds with 302 -> signed download URL
+        if ((int)response.StatusCode >= 300 && (int)response.StatusCode < 400 &&
+            response.Headers.Location is Uri redirectUri)
         {
-            var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-            response.EnsureSuccessStatusCode();
-            if (response.StatusCode == HttpStatusCode.Found || response.StatusCode == HttpStatusCode.TemporaryRedirect)
+            using var downloadClient = _httpClientFactory.CreateClient();
+            var downloadResponse = await downloadClient.GetAsync(redirectUri);
+            if (!downloadResponse.IsSuccessStatusCode)
             {
-                var redirectUrl = response.Headers.Location?.ToString();
-                if (string.IsNullOrEmpty(redirectUrl))
-                {
-                    _logger.LogError("Redirect URL not found for artifact download for {Owner}/{Repo}/{ArtifactId} with provided PAT", owner, repo, artifactId);
-                    return null;
-                }
-                using var downloadClient = _httpClientFactory.CreateClient();
-                var downloadResponse = await downloadClient.GetAsync(redirectUrl);
-                downloadResponse.EnsureSuccessStatusCode();
-                var contentBytes = await downloadResponse.Content.ReadAsByteArrayAsync();
-                var fileName = downloadResponse.Content.Headers.ContentDisposition?.FileNameStar ?? downloadResponse.Content.Headers.ContentDisposition?.FileName?.Trim('"') ?? $"artifact_{artifactId}.zip";
-                var contentType = downloadResponse.Content.Headers.ContentType?.ToString() ?? "application/zip";
-                return new GitHubFileContent { Content = contentBytes, FileName = fileName, ContentType = contentType };
-            }
-            else
-            {
-                _logger.LogError("Unexpected status code {StatusCode} when fetching artifact {ArtifactId} for {Owner}/{Repo} with provided PAT", response.StatusCode, artifactId, owner, repo);
+                _logger.LogError("Artifact redirect download failed {Status} for {Owner}/{Repo}/{ArtifactId}", downloadResponse.StatusCode, owner, repo, artifactId);
                 return null;
             }
+            var contentBytes = await downloadResponse.Content.ReadAsByteArrayAsync();
+            var fileName = downloadResponse.Content.Headers.ContentDisposition?.FileNameStar
+                           ?? downloadResponse.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+                           ?? $"artifact_{artifactId}.zip";
+            var contentType = downloadResponse.Content.Headers.ContentType?.ToString() ?? "application/zip";
+            return new GitHubFileContent { Content = contentBytes, FileName = fileName, ContentType = contentType };
         }
-        catch (HttpRequestException ex)
+
+        // Fallback: got 200 directly
+        if (response.IsSuccessStatusCode)
         {
-            _logger.LogError(ex, "Error downloading GitHub artifact {ArtifactId} for {Owner}/{Repo} with provided PAT. Status Code: {StatusCode}", artifactId, owner, repo, ex.StatusCode);
-            return null;
+            var contentBytes = await response.Content.ReadAsByteArrayAsync();
+            var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+                           ?? response.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+                           ?? $"artifact_{artifactId}.zip";
+            var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/zip";
+            return new GitHubFileContent { Content = contentBytes, FileName = fileName, ContentType = contentType };
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "An unexpected error occurred while downloading GitHub artifact {ArtifactId} for {Owner}/{Repo} with provided PAT", artifactId, owner, repo);
-            return null;
-        }
+
+        _logger.LogError("Unexpected status {Status} when requesting artifact {ArtifactId} for {Owner}/{Repo}", response.StatusCode, artifactId, owner, repo);
+        return null;
     }
+    catch (HttpRequestException ex)
+    {
+        _logger.LogError(ex, "Error downloading artifact {ArtifactId} for {Owner}/{Repo}", artifactId, owner, repo);
+        return null;
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Unexpected error downloading artifact {ArtifactId} for {Owner}/{Repo}", artifactId, owner, repo);
+        return null;
+    }
+}
 }

@@ -81,8 +81,8 @@ const WorkflowRunDetails: React.FC<WorkflowRunDetailsProps> = ({ run }) => {
     }
   };
 
-  const handleDownloadArtifact = (artifactUrl: string) => {
-    window.open(artifactUrl, "_blank");
+  const handleDownloadArtifact = (artifactId: number) => {
+    window.open(`/api/github/project/workflows/artifacts/${artifactId}/zip`, "_blank");
   };
 
   const contentVariants = {
@@ -192,7 +192,7 @@ const WorkflowRunDetails: React.FC<WorkflowRunDetailsProps> = ({ run }) => {
                             className="ml-2 h-auto px-2 py-1 text-blue-500 hover:text-blue-700"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDownloadArtifact(artifact.archive_download_url!);
+                              handleDownloadArtifact(artifact.id);
                             }}
                           >
                             Download

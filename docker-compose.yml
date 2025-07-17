@@ -28,7 +28,7 @@ services:
       JwtSettings__Secret: 05cLY8Xz14r9O2o4BXuc6dBirU1oOef81fM3sVgRQ7X5lyD8vuklKlj9oOx8eRrNs9VkHfA2Bj7UuCSWQIb3aQ==
       JwtSettings__Issuer: http://api.devops.local
       JwtSettings__Audience: http://devops.local
-      GitHub__ProjectPat: "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"
+      GitHub__ProjectPat: "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"
       GitHub__ProjectOwnerRepo: "MarkRWolf/Devops"
     ports: ["8080:5205"]
     volumes:
