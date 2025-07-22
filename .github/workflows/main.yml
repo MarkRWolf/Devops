@@ -13,7 +13,7 @@ env:
   ACA_RESOURCE_GROUP: Devops-rg
   SERVER_ACA_NAME: devopsserver
   CLIENT_ACA_NAME: devopsclient
-
+  NEXT_PUBLIC_SELF_URL: https://devopsclient.thankfulglacier-8f9db822.northeurope.azurecontainerapps.io
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -46,7 +46,7 @@ jobs:
 
       - name: Build and Push Client Image
         run: |
-          docker build -t ${{ env.ACR_NAME }}/${{ env.CLIENT_IMAGE_REPO }}:${{ env.SHA }} -f client/Dockerfile ./client
+          docker build --build-arg NEXT_PUBLIC_SELF_URL="${{ env.NEXT_PUBLIC_SELF_URL }}" -t ${{ env.ACR_NAME }}/${{ env.CLIENT_IMAGE_REPO }}:${{ env.SHA }} -f client/Dockerfile ./client
           docker push ${{ env.ACR_NAME }}/${{ env.CLIENT_IMAGE_REPO }}:${{ env.SHA }}
           docker tag ${{ env.ACR_NAME }}/${{ env.CLIENT_IMAGE_REPO }}:${{ env.SHA }} ${{ env.ACR_NAME }}/${{ env.CLIENT_IMAGE_REPO }}:latest
           docker push ${{ env.ACR_NAME }}/${{ env.CLIENT_IMAGE_REPO }}:latest
