@@ -36,6 +36,8 @@ services:
   client:
     build:
       context: ./client
+      args:
+        NEXT_PUBLIC_SELF_URL: ${NEXT_PUBLIC_SELF_URL}
     depends_on: [server]
     environment:
       DOTNET_API_BASE_URL: http://server:5205/API
