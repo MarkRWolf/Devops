@@ -5,8 +5,7 @@ RUN npm install --legacy-peer-deps
 
 FROM node:22-alpine AS builder
 WORKDIR /app
-ARG SELF_URL
-ENV SELF_URL=$SELF_URL
+ARG NEXT_PUBLIC_SELF_URL
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build

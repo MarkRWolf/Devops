@@ -19,6 +19,13 @@ export const loginSchema = z.object({
 
 export const gitHubPatSchema = z.object({
   gitHubPat: z.string().min(1, "Personal Access Token is required"),
+  GitHubOwnerRepo: z
+    .string()
+    .min(1, "Owner/Repo cannot be empty.")
+    .regex(
+      /^[a-zA-Z0-9_-]+\/[a-zA-Z0-9_.-]+$/,
+      "Invalid owner/repo format. Expected 'owner/repo'."
+    ),
 });
 
 export type SignupInput = z.infer<typeof signupSchema>;

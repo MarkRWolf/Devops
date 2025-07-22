@@ -1,97 +1,73 @@
-// client/src/components/WorkflowRunDetails.tsx
 "use client";
 
-import React, { useState } from "react";
-import { motion } from "framer-motion";
-import { GitHubWorkflowRun, GitHubJob, GitHubArtifact } from "@/lib/github/models";
+import React, { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+import { GitHubWorkflowRun, GitHubJob, GitHubArtifact } from "@/lib/github/models";
 
 interface WorkflowRunDetailsProps {
   run: GitHubWorkflowRun;
+  urlInsert: string;
 }
 
-const WorkflowRunDetails: React.FC<WorkflowRunDetailsProps> = ({ run }) => {
+export default function WorkflowRunDetails({ run, urlInsert }: WorkflowRunDetailsProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [jobs, setJobs] = useState<GitHubJob[] | null>(null);
   const [artifacts, setArtifacts] = useState<GitHubArtifact[] | null>(null);
-  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const handleToggle = async () => {
-    const newState = !isExpanded;
-    setIsExpanded(newState);
+  /**
+   * Fetch jobs and artifacts in parallel. GitHub doesn’t expose counts on the
+   * run object, so there’s no zero‑call optimisation available.
+   */
+  const fetchDetails = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
 
-    if (newState && (!jobs || !artifacts)) {
-      setIsLoadingDetails(true);
-      setError(null);
-      try {
-        const [jobsRes, artifactsRes] = await Promise.all([
-          fetch(`/api/github/project/workflows/runs/${run.id}/jobs`),
-          fetch(`/api/github/project/workflows/runs/${run.id}/artifacts`),
-        ]);
-
-        if (!jobsRes.ok) {
-          throw new Error(`Failed to fetch jobs: ${jobsRes.status} ${await jobsRes.text()}`);
-        }
-        if (!artifactsRes.ok) {
-          throw new Error(
-            `Failed to fetch artifacts: ${artifactsRes.status} ${await artifactsRes.text()}`
-          );
-        }
-
-        const jobsJson = await jobsRes.json();
-        const artifactsJson = await artifactsRes.json();
-
-        const jobsArr: GitHubJob[] = Array.isArray(jobsJson)
-          ? jobsJson
-          : Array.isArray(jobsJson.jobs)
-          ? jobsJson.jobs
-          : [];
-
-        const artifactsArr: GitHubArtifact[] = Array.isArray(artifactsJson)
-          ? artifactsJson
-          : Array.isArray(artifactsJson.artifacts)
-          ? artifactsJson.artifacts
-          : [];
-
-        setJobs(jobsArr);
-        setArtifacts(artifactsArr);
-      } catch (err: unknown) {
-        console.error("Error fetching run details:", err);
-        setError(err instanceof Error ? err.message : "Failed to load run details.");
-        setJobs(null);
-        setArtifacts(null);
-      } finally {
-        setIsLoadingDetails(false);
-      }
-    }
-  };
-
-  const handleDownloadLogs = async (runId: number) => {
     try {
-      const response = await fetch(`/api/github/project/workflows/runs/${runId}/logs`);
-      if (response.ok) {
-        window.open(response.url, "_blank");
-      } else {
-        alert(`Failed to download logs: ${response.status} ${await response.text()}`);
-      }
+      const base = `/api/github${urlInsert}/workflows/runs/${run.id}`;
+      const [jobsRes, artifactsRes] = await Promise.all([
+        fetch(`${base}/jobs`),
+        fetch(`${base}/artifacts`),
+      ]);
+
+      if (!jobsRes.ok)
+        throw new Error(`Failed to fetch jobs: ${jobsRes.status} ${await jobsRes.text()}`);
+      if (!artifactsRes.ok)
+        throw new Error(
+          `Failed to fetch artifacts: ${artifactsRes.status} ${await artifactsRes.text()}`
+        );
+
+      const jobsJson = await jobsRes.json();
+      const artifactsJson = await artifactsRes.json();
+
+      setJobs(Array.isArray(jobsJson.jobs) ? jobsJson.jobs : jobsJson);
+      setArtifacts(
+        Array.isArray(artifactsJson.artifacts) ? artifactsJson.artifacts : artifactsJson
+      );
     } catch (err) {
-      console.error("Error downloading logs:", err);
-      alert("Error downloading logs.");
+      if (process.env.NODE_ENV === "development") console.error(err);
+      setError(err instanceof Error ? err.message : "Failed to load run details.");
+      setJobs(null);
+      setArtifacts(null);
+    } finally {
+      setIsLoading(false);
     }
+  }, [run.id, urlInsert]);
+
+  /**
+   * Toggle panel and lazily load details the first time it’s opened.
+   */
+  const handleToggle = () => {
+    const next = !isExpanded;
+    setIsExpanded(next);
+    if (next && jobs === null && artifacts === null) fetchDetails();
   };
 
-  const handleDownloadArtifact = (artifactId: number) => {
-    window.open(`/api/github/project/workflows/artifacts/${artifactId}/zip`, "_blank");
-  };
-
-  const contentVariants = {
-    closed: { opacity: 0, height: 0, overflow: "hidden" },
-    open: { opacity: 1, height: "auto", overflow: "visible" },
-  };
+  const download = (url: string) => window.open(url, "_blank");
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
+    <div className="border rounded-lg p-4 bg-white shadow-sm">
       <div className="flex justify-between items-center cursor-pointer" onClick={handleToggle}>
         <div>
           <h3 className="text-md font-semibold text-gray-800">{run.name}</h3>
@@ -110,7 +86,7 @@ const WorkflowRunDetails: React.FC<WorkflowRunDetailsProps> = ({ run }) => {
             </span>
           </p>
           <p className="text-xs text-gray-500">
-            Run Number: {run.run_number} | Created:{" "}
+            Run #{run.run_number} •{" "}
             {new Date(run.created_at).toLocaleString("da-DK", {
               year: "numeric",
               month: "2-digit",
@@ -140,76 +116,84 @@ const WorkflowRunDetails: React.FC<WorkflowRunDetailsProps> = ({ run }) => {
         </Button>
       </div>
 
-      <motion.div
-        initial="closed"
-        animate={isExpanded ? "open" : "closed"}
-        variants={contentVariants}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="overflow-hidden"
+      {/* Collapsible area — purely CSS */}
+      <div
+        className={`transition-[max-height,opacity] duration-300 ease-in-out overflow-hidden ${
+          isExpanded ? "max-h-[800px] opacity-100" : "max-h-0 opacity-0"
+        }`}
       >
         {isExpanded && (
-          <div className="mt-4 border-t pt-4">
-            {isLoadingDetails ? (
-              <p className="text-center text-gray-500">Loading details...</p>
+          <div className="pt-4">
+            {isLoading ? (
+              <p className="text-center text-gray-500">Loading…</p>
             ) : error ? (
               <p className="text-center text-red-500">{error}</p>
             ) : (
               <>
-                <h4 className="text-md font-semibold mb-2">Jobs:</h4>
-                {jobs && jobs.length > 0 ? (
-                  <ul className="list-disc pl-5 mb-4 text-sm text-gray-700">
-                    {jobs.map((job) => (
-                      <li key={job.id} className="mb-1">
-                        {job.name} - {job.status} ({job.conclusion ?? "N/A"})
-                        {job.html_url && (
-                          <a
-                            href={job.html_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="ml-2 text-blue-500 hover:underline"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            View Job
-                          </a>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-gray-500 mb-4">No jobs found for this run.</p>
-                )}
+                <section className="mb-4">
+                  <h4 className="text-md font-semibold mb-2">Jobs:</h4>
+                  {jobs && jobs.length ? (
+                    <ul className="list-disc pl-5 text-sm text-gray-700">
+                      {jobs.map((job) => (
+                        <li key={job.id} className="mb-1">
+                          {job.name} – {job.status} ({job.conclusion ?? "N/A"})
+                          {job.html_url && (
+                            <a
+                              href={job.html_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="ml-2 text-blue-500 hover:underline"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              View Job
+                            </a>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-gray-500">No jobs found.</p>
+                  )}
+                </section>
 
-                <h4 className="text-md font-semibold mb-2">Artifacts:</h4>
-                {artifacts && artifacts.length > 0 ? (
-                  <ul className="list-disc pl-5 text-sm text-gray-700">
-                    {artifacts.map((artifact) => (
-                      <li key={artifact.id} className="mb-1">
-                        {artifact.name} ({(artifact.size_in_bytes / 1024).toFixed(2)} KB)
-                        {artifact.archive_download_url && (
+                <section className="mb-4">
+                  <h4 className="text-md font-semibold mb-2">Artifacts:</h4>
+                  {artifacts && artifacts.length ? (
+                    <ul className="list-disc pl-5 text-sm text-gray-700">
+                      {artifacts.map((artifact) => (
+                        <li key={artifact.id} className="mb-1">
+                          {artifact.name} (
+                          {Intl.NumberFormat("en", {
+                            notation: "compact",
+                            maximumFractionDigits: 1,
+                          }).format(artifact.size_in_bytes)}
+                          )
                           <Button
                             variant="ghost"
                             size="sm"
                             className="ml-2 h-auto px-2 py-1 text-blue-500 hover:text-blue-700"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDownloadArtifact(artifact.id);
+                              download(
+                                `/api/github${urlInsert}/workflows/artifacts/${artifact.id}/zip`
+                              );
                             }}
                           >
                             Download
                           </Button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-gray-500">No artifacts found for this run.</p>
-                )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-gray-500">No artifacts found.</p>
+                  )}
+                </section>
 
                 <div className="mt-4">
                   <Button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDownloadLogs(run.id);
+                      download(`/api/github${urlInsert}/workflows/runs/${run.id}/logs`);
                     }}
                   >
                     Download All Logs
@@ -219,9 +203,7 @@ const WorkflowRunDetails: React.FC<WorkflowRunDetailsProps> = ({ run }) => {
             )}
           </div>
         )}
-      </motion.div>
+      </div>
     </div>
   );
-};
-
-export default WorkflowRunDetails;
+}

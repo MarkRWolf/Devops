@@ -10,8 +10,7 @@ using System.Security.Claims;
 [Authorize]
 public class PatController(IPatService patService) : ControllerBase
 {
-    public record StorePatRequest(string GitHubPat);
-    public record PatStatusResponse(bool HasGitHubPat);
+public record StorePatRequest(string GitHubPat, string GitHubOwnerRepo);    public record PatStatusResponse(bool HasGitHubPat);
 
     [HttpPost("github")]
     public async Task<IActionResult> StoreGitHubPat([FromBody] StorePatRequest request)
@@ -22,7 +21,7 @@ public class PatController(IPatService patService) : ControllerBase
             return Unauthorized("Invalid user ID.");
         }
 
-        var (success, error) = await patService.StoreGitHubPatAsync(userId, request.GitHubPat);
+        var (success, error) = await patService.StoreGitHubPatAsync(userId, request.GitHubPat, request.GitHubOwnerRepo);
 
         if (!success)
         {

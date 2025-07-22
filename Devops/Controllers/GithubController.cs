@@ -25,7 +25,6 @@ public class GitHubController(
     private readonly IPatService _patService = patService;
     private readonly ILogger<GitHubController> _log = logger;
 
-    // Project-level config (anonymous endpoints)
     private readonly string? _projectOwnerRepo = configuration["GitHub:ProjectOwnerRepo"];
     private readonly string? _projectPat = configuration["GitHub:ProjectPat"];
 
@@ -45,91 +44,130 @@ public class GitHubController(
 
     /* ───────────────── user-auth endpoints ───────────────── */
 
-    [HttpGet("workflows/{owner}/{repo}/runs")]
-    public async Task<ActionResult<List<GitHubWorkflowRun>>> GetWorkflowRuns(string owner, string repo)
+     [HttpGet("workflows/runs")]
+    public async Task<ActionResult<List<GitHubWorkflowRun>>> GetWorkflowRuns()
     {
-        var userId = await GetValidatedUserId();
-        if (!userId.HasValue) return Unauthorized("Invalid user ID.");
-        if (!await CheckPatExists(userId.Value)) return BadRequest("GitHub PAT not configured for your account.");
-        var runs = await _githubService.GetWorkflowRunsAsync(userId.Value, owner, repo);
+        var userIdClaim = User.FindFirstValue("id");
+        if (!Guid.TryParse(userIdClaim, out var userId))
+            return Unauthorized("Invalid user ID.");
+
+        var (pat, ownerRepo) = await _patService.GetGitHubCredentialsAsync(userId);
+
+        if (string.IsNullOrEmpty(pat) || string.IsNullOrEmpty(ownerRepo))
+        {
+            return BadRequest("GitHub PAT or Owner/Repo not configured for your account.");
+        }
+
+        var parts = ownerRepo.Split('/');
+        if (parts.Length != 2)
+        {
+            return StatusCode(500, "Invalid stored GitHub Owner/Repo format.");
+        }
+        var owner = parts[0];
+        var repo = parts[1];
+
+        var runs = await _githubService.GetWorkflowRunsAsync(userId, owner, repo);
         if (runs == null) return StatusCode(500, "Failed to retrieve GitHub workflow runs. Please check server logs for details.");
         return Ok(runs);
     }
 
-    [HttpGet("workflows/{owner}/{repo}/runs/{runId}")]
-    public async Task<ActionResult<GitHubWorkflowRun>> GetSingleWorkflowRun(string owner, string repo, long runId)
-    {
-        var userId = await GetValidatedUserId();
-        if (!userId.HasValue) return Unauthorized("Invalid user ID.");
-        if (!await CheckPatExists(userId.Value)) return BadRequest("GitHub PAT not configured.");
-        var run = await _githubService.GetSingleWorkflowRunAsync(userId.Value, owner, repo, runId);
-        if (run == null) return NotFound($"Workflow run with ID {runId} not found or failed to retrieve for {owner}/{repo}.");
-        return Ok(run);
-    }
 
-    [HttpGet("workflows/{owner}/{repo}/runs/{runId}/jobs")]
-    public async Task<ActionResult<List<GitHubJob>>> GetWorkflowRunJobs(string owner, string repo, long runId)
-    {
-        var userId = await GetValidatedUserId();
-        if (!userId.HasValue) return Unauthorized("Invalid user ID.");
-        if (!await CheckPatExists(userId.Value)) return BadRequest("GitHub PAT not configured.");
+[HttpGet("workflows/runs/{runId}")]
+public async Task<ActionResult<GitHubWorkflowRun>> GetWorkflowRun(long runId)
+{
+    var userIdClaim = User.FindFirstValue("id");
+    if (!Guid.TryParse(userIdClaim, out var userId))
+        return Unauthorized("Invalid user ID.");
 
-        _log.LogInformation("UserJobs: user={UserId} owner={Owner} repo={Repo} runId={RunId}", userId, owner, repo, runId);
+    var (pat, ownerRepo) = await _patService.GetGitHubCredentialsAsync(userId);
+    if (string.IsNullOrEmpty(pat) || string.IsNullOrEmpty(ownerRepo))
+        return BadRequest("GitHub PAT or Owner/Repo not configured.");
 
-        var jobs = await _githubService.GetWorkflowRunJobsAsync(userId.Value, owner, repo, runId);
+    var split = ownerRepo.Split('/');
+    if (split.Length != 2) return StatusCode(500, "Invalid Owner/Repo format.");
+    var run = await _githubService.GetSingleWorkflowRunAsync(userId, split[0], split[1], runId);
+    return run is null
+        ? NotFound($"Run {runId} not found for {ownerRepo}.")
+        : Ok(run);
+}
 
-        if (jobs is null)
-        {
-            _log.LogError("UserJobsNull: user={UserId} owner={Owner} repo={Repo} runId={RunId}", userId, owner, repo, runId);
-            return StatusCode(500, $"Failed to retrieve workflow jobs for {owner}/{repo}/{runId}.");
-        }
+[HttpGet("workflows/runs/{runId}/jobs")]
+public async Task<ActionResult<List<GitHubJob>>> GetWorkflowRunJobs(long runId)
+{
+    var userIdClaim = User.FindFirstValue("id");
+    if (!Guid.TryParse(userIdClaim, out var userId))
+        return Unauthorized("Invalid user ID.");
 
-        _log.LogInformation("UserJobsCount: user={UserId} owner={Owner} repo={Repo} runId={RunId} count={Count}", userId, owner, repo, runId, jobs.Count);
-        return Ok(jobs);
-    }
+    var (pat, ownerRepo) = await _patService.GetGitHubCredentialsAsync(userId);
+    if (string.IsNullOrEmpty(pat) || string.IsNullOrEmpty(ownerRepo))
+        return BadRequest("GitHub PAT or Owner/Repo not configured.");
 
-    [HttpGet("workflows/{owner}/{repo}/runs/{runId}/logs")]
-    public async Task<ActionResult> DownloadWorkflowRunLogs(string owner, string repo, long runId)
-    {
-        var userId = await GetValidatedUserId();
-        if (!userId.HasValue) return Unauthorized("Invalid user ID.");
-        if (!await CheckPatExists(userId.Value)) return BadRequest("GitHub PAT not configured.");
-        var fileContent = await _githubService.DownloadWorkflowRunLogsAsync(userId.Value, owner, repo, runId);
-        if (fileContent == null) return NotFound($"Logs for workflow run ID {runId} not found or failed to retrieve for {owner}/{repo}.");
-        return File(fileContent.Content, fileContent.ContentType, fileContent.FileName);
-    }
+    var split = ownerRepo.Split('/');
+    if (split.Length != 2) return StatusCode(500, "Invalid Owner/Repo format.");
+    var jobs = await _githubService.GetWorkflowRunJobsAsync(userId, split[0], split[1], runId);
+    return jobs is null
+        ? StatusCode(500, $"Failed to retrieve jobs for {ownerRepo}/{runId}.")
+        : Ok(jobs);
+}
 
-    [HttpGet("workflows/{owner}/{repo}/runs/{runId}/artifacts")]
-    public async Task<ActionResult<List<GitHubArtifact>>> GetWorkflowRunArtifacts(string owner, string repo, long runId)
-    {
-        var userId = await GetValidatedUserId();
-        if (!userId.HasValue) return Unauthorized("Invalid user ID.");
-        if (!await CheckPatExists(userId.Value)) return BadRequest("GitHub PAT not configured.");
+[HttpGet("workflows/runs/{runId}/artifacts")]
+public async Task<ActionResult<List<GitHubArtifact>>> GetWorkflowRunArtifacts(long runId)
+{
+    var userIdClaim = User.FindFirstValue("id");
+    if (!Guid.TryParse(userIdClaim, out var userId))
+        return Unauthorized("Invalid user ID.");
 
-        _log.LogInformation("UserArtifacts: user={UserId} owner={Owner} repo={Repo} runId={RunId}", userId, owner, repo, runId);
+    var (pat, ownerRepo) = await _patService.GetGitHubCredentialsAsync(userId);
+    if (string.IsNullOrEmpty(pat) || string.IsNullOrEmpty(ownerRepo))
+        return BadRequest("GitHub PAT or Owner/Repo not configured.");
 
-        var artifacts = await _githubService.GetWorkflowRunArtifactsAsync(userId.Value, owner, repo, runId);
+    var split = ownerRepo.Split('/');
+    if (split.Length != 2) return StatusCode(500, "Invalid Owner/Repo format.");
+    var artifacts = await _githubService.GetWorkflowRunArtifactsAsync(userId, split[0], split[1], runId);
+    return artifacts is null
+        ? StatusCode(500, $"Failed to retrieve artifacts for {ownerRepo}/{runId}.")
+        : Ok(artifacts);
+}
 
-        if (artifacts is null)
-        {
-            _log.LogError("UserArtifactsNull: user={UserId} owner={Owner} repo={Repo} runId={RunId}", userId, owner, repo, runId);
-            return StatusCode(500, $"Failed to retrieve workflow artifacts for {owner}/{repo}/{runId}.");
-        }
+[HttpGet("workflows/runs/{runId}/logs")]
+public async Task<ActionResult> DownloadWorkflowRunLogs(long runId)
+{
+    var userIdClaim = User.FindFirstValue("id");
+    if (!Guid.TryParse(userIdClaim, out var userId))
+        return Unauthorized("Invalid user ID.");
 
-        _log.LogInformation("UserArtifactsCount: user={UserId} owner={Owner} repo={Repo} runId={RunId} count={Count}", userId, owner, repo, runId, artifacts.Count);
-        return Ok(artifacts);
-    }
+    var (pat, ownerRepo) = await _patService.GetGitHubCredentialsAsync(userId);
+    if (string.IsNullOrEmpty(pat) || string.IsNullOrEmpty(ownerRepo))
+        return BadRequest("GitHub PAT or Owner/Repo not configured.");
 
-    [HttpGet("workflows/{owner}/{repo}/artifacts/{artifactId}/zip")]
-    public async Task<ActionResult> DownloadSpecificArtifact(string owner, string repo, long artifactId)
-    {
-        var userId = await GetValidatedUserId();
-        if (!userId.HasValue) return Unauthorized("Invalid user ID.");
-        if (!await CheckPatExists(userId.Value)) return BadRequest("GitHub PAT not configured.");
-        var fileContent = await _githubService.DownloadSpecificArtifactAsync(userId.Value, owner, repo, artifactId);
-        if (fileContent == null) return NotFound($"Artifact with ID {artifactId} not found or failed to retrieve for {owner}/{repo}.");
-        return File(fileContent.Content, fileContent.ContentType, fileContent.FileName);
-    }
+    var split = ownerRepo.Split('/');
+    if (split.Length != 2) return StatusCode(500, "Invalid Owner/Repo format.");
+    var file = await _githubService.DownloadWorkflowRunLogsAsync(userId, split[0], split[1], runId);
+    return file is null
+        ? NotFound($"Logs for run {runId} not found for {ownerRepo}.")
+        : File(file.Content, file.ContentType, file.FileName);
+}
+
+[HttpGet("workflows/artifacts/{artifactId}/zip")]
+public async Task<ActionResult> DownloadArtifact(long artifactId)
+{
+    var userIdClaim = User.FindFirstValue("id");
+    if (!Guid.TryParse(userIdClaim, out var userId))
+        return Unauthorized("Invalid user ID.");
+
+    var (pat, ownerRepo) = await _patService.GetGitHubCredentialsAsync(userId);
+    if (string.IsNullOrEmpty(pat) || string.IsNullOrEmpty(ownerRepo))
+        return BadRequest("GitHub PAT or Owner/Repo not configured.");
+
+    var split = ownerRepo.Split('/');
+    if (split.Length != 2) return StatusCode(500, "Invalid Owner/Repo format.");
+    var file = await _githubService.DownloadSpecificArtifactAsync(userId, split[0], split[1], artifactId);
+    return file is null
+        ? NotFound($"Artifact {artifactId} not found for {ownerRepo}.")
+        : File(file.Content, file.ContentType, file.FileName);
+}
+
+ 
 
     /* ───────────────── anonymous project endpoints ───────────────── */
 

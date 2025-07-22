@@ -2,7 +2,7 @@ services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2019-latest
     environment:
-      SA_PASSWORD: Strong!Passw0rd
+      SA_PASSWORD: ${SA_PASSWORD}
       ACCEPT_EULA: Y
     ports: ["1433:1433"]
     volumes:
@@ -13,8 +13,8 @@ services:
     depends_on: [sqlserver]
     entrypoint: >
       /bin/bash -c "
-      until /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P Strong!Passw0rd -Q 'SELECT 1'; do sleep 5; done &&
-      /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P Strong!Passw0rd -Q \"IF DB_ID('DevopsDB') IS NULL CREATE DATABASE DevopsDB;\" 
+      until /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P ${SA_PASSWORD} -Q 'SELECT 1'; do sleep 5; done &&
+      /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P ${SA_PASSWORD} -Q \"IF DB_ID('DevopsDB') IS NULL CREATE DATABASE DevopsDB;\" 
       "
 
   server:
@@ -24,21 +24,18 @@ services:
         condition: service_completed_successfully
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__DevopsDB: Server=sqlserver;Database=DevopsDB;User Id=sa;Password=Strong!Passw0rd;TrustServerCertificate=True
-      JwtSettings__Secret: 05cLY8Xz14r9O2o4BXuc6dBirU1oOef81fM3sVgRQ7X5lyD8vuklKlj9oOx8eRrNs9VkHfA2Bj7UuCSWQIb3aQ==
+      ConnectionStrings__DevopsDB: Server=sqlserver;Database=DevopsDB;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True
+      JwtSettings__Secret: ${JWT_SETTINGS_SECRET}
       JwtSettings__Issuer: http://api.devops.local
       JwtSettings__Audience: http://devops.local
-      GitHub__ProjectPat: "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"
+      GitHub__ProjectPat: ${GITHUB_PROJECT_PAT}
       GitHub__ProjectOwnerRepo: "MarkRWolf/Devops"
     ports: ["8080:5205"]
     volumes:
       - devops_data_protection_keys:/app/dpkeys
-
   client:
     build:
       context: ./client
-      args:
-        SELF_URL: ${SELF_URL}
     depends_on: [server]
     environment:
       DOTNET_API_BASE_URL: http://server:5205/API
