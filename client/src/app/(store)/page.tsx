@@ -13,7 +13,7 @@ export default async function Home() {
     <div className="flex flex-col items-center gap-4 mt-8">
       <h1 className="text-xl">Welcome to my Devops Dashboard</h1>
 
-      <BetterLink href="/login">
+      <BetterLink href={`/login`}>
         <Button variant="outline">Login</Button>
       </BetterLink>
 
