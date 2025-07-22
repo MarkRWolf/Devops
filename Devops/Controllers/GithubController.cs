@@ -161,7 +161,8 @@ public async Task<ActionResult> DownloadArtifact(long artifactId)
 
     var split = ownerRepo.Split('/');
     if (split.Length != 2) return StatusCode(500, "Invalid Owner/Repo format.");
-    var file = await _githubService.DownloadSpecificArtifactAsync(userId, split[0], split[1], artifactId);
+    var (owner, repo) = (split[0], split[1]);
+    var file = await _githubService.DownloadSpecificArtifactWithPatAsync(owner, repo, artifactId, pat);
     return file is null
         ? NotFound($"Artifact {artifactId} not found for {ownerRepo}.")
         : File(file.Content, file.ContentType, file.FileName);
