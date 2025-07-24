@@ -12,6 +12,7 @@ const Charts = ({ workflowRuns }: { workflowRuns?: GitHubWorkflowRun[] }) => {
 
   return (
     <div className="container-main py-6">
+      <h2>Charts</h2>
       <div className="grid gap-6 sm:grid-cols-2">
         <div className="bg-card p-6 rounded-2xl shadow-lg">
           <div className="aspect-square w-full">
