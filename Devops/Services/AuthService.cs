@@ -54,7 +54,7 @@ public sealed class AuthService : IAuthService
             issuer: issuer,
             audience: audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddHours(3),
+            expires: DateTime.UtcNow.AddDays(30),
             signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
 
         return new JwtSecurityTokenHandler().WriteToken(token);

@@ -7,9 +7,13 @@ public sealed class DevopsUser : IdentityUser<Guid>
 {
     public bool IsAdmin { get; set; }
 
+    /* GitHub stuff */
     public string? EncryptedGitHubPat { get; set; }
-    public string? GitHubOwnerRepo { get; set; }
+    public string? GitHubOwnerRepo { get; set; } 
+    public bool HasGitHubConfig { get; set; }
     public string? EncryptedAzureDevOpsToken { get; set; }
-    public record Public(Guid Id, string Email, string Username, bool IsAdmin);
-    public Public ToPublic() => new(Id, Email!, UserName!, IsAdmin);
+
+    /* DTOs n stuff */
+    public record Public(Guid Id, string Email, string Username, bool IsAdmin, bool HasGitHubConfig);
+    public Public ToPublic() => new(Id, Email!, UserName!, IsAdmin, HasGitHubConfig);
 }

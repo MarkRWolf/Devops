@@ -16,7 +16,7 @@ export default async function Home() {
       <BetterLink href={`/login`}>
         <Button variant="outline">Login</Button>
       </BetterLink>
-
+  
       <WorkflowRuns runs={projectWorkflowRuns} project={"/project"} />
     </div>
   );

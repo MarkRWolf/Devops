@@ -16,10 +16,6 @@ export default function WorkflowRunDetails({ run, urlInsert }: WorkflowRunDetail
   const [jobs, setJobs] = useState<GitHubJob[] | null>(null);
   const [artifacts, setArtifacts] = useState<GitHubArtifact[] | null>(null);
 
-  /**
-   * Fetch jobs and artifacts in parallel. GitHub doesn’t expose counts on the
-   * run object, so there’s no zero‑call optimisation available.
-   */
   const fetchDetails = useCallback(async () => {
     setIsLoading(true);
     setError(null);

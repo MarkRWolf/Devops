@@ -10,11 +10,11 @@ const WorkflowRuns = async ({ runs, project = "" }: WorkflowRunsProps) => {
   return (
     <>
       {runs.length > 0 && (
-        <div className="mt-4 w-full max-w-2xl">
+        <div className="max-w-5xl mx-auto py-4 px-8 border space-y-2">
           <h2 className="text-lg font-semibold mb-4">Latest Project Workflow Runs:</h2>
           <ul className="space-y-4">
             {runs.map((run) => (
-              <li key={run.id} className="border p-4 rounded-lg shadow-sm bg-white">
+              <li key={run.id} className="bg-white">
                 <WorkflowRunDetails run={run} urlInsert={project} />
               </li>
             ))}

@@ -6,6 +6,7 @@ import { gitHubPatSchema } from "@/lib/user/userSchema";
 import { ZodError } from "zod";
 import { FaCheck } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
+import { FaX } from "react-icons/fa6";
 
 const ProfileClient = (props: { user: User }) => {
   const me = props.user;
@@ -98,6 +99,9 @@ const ProfileClient = (props: { user: User }) => {
         <h1 className="text-2xl font-bold">Profile</h1>
         <p>Username: {me.username}</p>
         <p>Email: {me.email}</p>
+        <p className="flex items-center">
+          GitHub: &nbsp;{me.hasGitHubConfig ? <FaCheck /> : <FaX />}
+        </p>
       </div>
       <form onSubmit={submitPat}>
         <div className="space-y-4">
@@ -147,7 +151,7 @@ const ProfileClient = (props: { user: User }) => {
         </div>
         {err && <p className="mt-4 p-2 rounded bg-red-100 text-red-700">{err}</p>}
       </form>
-      <Button variant="outline" onClick={logout} className="cursor-pointer">
+      <Button variant="outline" onClick={logout}>
         Logout
       </Button>
     </main>

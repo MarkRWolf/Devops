@@ -51,6 +51,7 @@ public sealed class PatService : IPatService
 
         user.EncryptedGitHubPat = encryptedPat;
         user.GitHubOwnerRepo = ownerRepo;
+        user.HasGitHubConfig = true;
         await _db.SaveChangesAsync();
         return (true, null);
     }
