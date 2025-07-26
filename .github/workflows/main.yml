@@ -4,16 +4,6 @@ on:
   push:
     branches:
       - ghmaster
-
-env:
-  ACR_NAME: devopsdashboard.azurecr.io
-  SERVER_IMAGE_REPO: server
-  CLIENT_IMAGE_REPO: client
-
-  ACA_RESOURCE_GROUP: Devops-rg
-  SERVER_ACA_NAME: devopsserver
-  CLIENT_ACA_NAME: devopsclient
-  NEXT_PUBLIC_SELF_URL: https://devopsclient.thankfulglacier-8f9db822.northeurope.azurecontainerapps.io
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -30,7 +20,7 @@ jobs:
 
       - name: Log in to Azure Container Registry
         run: |
-          docker login ${{ env.ACR_NAME }} -u ${{ secrets.ACR_USERNAME }} -p ${{ secrets.ACR_PASSWORD }}
+          docker login ${{ secrets.ACR_NAME }} -u ${{ secrets.ACR_USERNAME }} -p ${{ secrets.ACR_PASSWORD }}
 
       - name: Get current Git short SHA for image tag
         id: git_sha
@@ -38,18 +28,18 @@ jobs:
 
       - name: Build and Push Server Image
         run: |
-          docker build -t ${{ env.ACR_NAME }}/${{ env.SERVER_IMAGE_REPO }}:${{ env.SHA }} -f Devops/Dockerfile ./Devops
-          docker push ${{ env.ACR_NAME }}/${{ env.SERVER_IMAGE_REPO }}:${{ env.SHA }}
-          docker tag ${{ env.ACR_NAME }}/${{ env.SERVER_IMAGE_REPO }}:${{ env.SHA }} ${{ env.ACR_NAME }}/${{ env.SERVER_IMAGE_REPO }}:latest
-          docker push ${{ env.ACR_NAME }}/${{ env.SERVER_IMAGE_REPO }}:latest
+          docker build -t ${{ secrets.ACR_NAME }}/${{ secrets.SERVER_IMAGE_REPO }}:${{ env.SHA }} -f Devops/Dockerfile ./Devops
+          docker push ${{ secrets.ACR_NAME }}/${{ secrets.SERVER_IMAGE_REPO }}:${{ env.SHA }}
+          docker tag ${{ secrets.ACR_NAME }}/${{ secrets.SERVER_IMAGE_REPO }}:${{ env.SHA }} ${{ secrets.ACR_NAME }}/${{ secrets.SERVER_IMAGE_REPO }}:latest
+          docker push ${{ secrets.ACR_NAME }}/${{ secrets.SERVER_IMAGE_REPO }}:latest
         working-directory: .
 
       - name: Build and Push Client Image
         run: |
-          docker build --build-arg NEXT_PUBLIC_SELF_URL="${{ env.NEXT_PUBLIC_SELF_URL }}" -t ${{ env.ACR_NAME }}/${{ env.CLIENT_IMAGE_REPO }}:${{ env.SHA }} -f client/Dockerfile ./client
-          docker push ${{ env.ACR_NAME }}/${{ env.CLIENT_IMAGE_REPO }}:${{ env.SHA }}
-          docker tag ${{ env.ACR_NAME }}/${{ env.CLIENT_IMAGE_REPO }}:${{ env.SHA }} ${{ env.ACR_NAME }}/${{ env.CLIENT_IMAGE_REPO }}:latest
-          docker push ${{ env.ACR_NAME }}/${{ env.CLIENT_IMAGE_REPO }}:latest
+          docker build --build-arg NEXT_PUBLIC_SELF_URL="${{ secrets.NEXT_PUBLIC_SELF_URL }}" -t ${{ secrets.ACR_NAME }}/${{ secrets.CLIENT_IMAGE_REPO }}:${{ env.SHA }} -f client/Dockerfile ./client
+          docker push ${{ secrets.ACR_NAME }}/${{ secrets.CLIENT_IMAGE_REPO }}:${{ env.SHA }}
+          docker tag ${{ secrets.ACR_NAME }}/${{ secrets.CLIENT_IMAGE_REPO }}:${{ env.SHA }} ${{ secrets.ACR_NAME }}/${{ secrets.CLIENT_IMAGE_REPO }}:latest
+          docker push ${{ secrets.ACR_NAME }}/${{ secrets.CLIENT_IMAGE_REPO }}:latest
         working-directory: .
 
       - name: Write run info
@@ -68,13 +58,13 @@ jobs:
       - name: Deploy Server Container App
         uses: azure/container-apps-deploy-action@v1
         with:
-          resourceGroup: ${{ env.ACA_RESOURCE_GROUP }}
-          containerAppName: ${{ env.SERVER_ACA_NAME }}
-          imageToDeploy: ${{ env.ACR_NAME }}/${{ env.SERVER_IMAGE_REPO }}:${{ env.SHA }}
+          resourceGroup: ${{ secrets.ACA_RESOURCE_GROUP }}
+          containerAppName: ${{ secrets.SERVER_ACA_NAME }}
+          imageToDeploy: ${{ secrets.ACR_NAME }}/${{ secrets.SERVER_IMAGE_REPO }}:${{ env.SHA }}
 
       - name: Deploy Client Container App
         uses: azure/container-apps-deploy-action@v1
         with:
-          resourceGroup: ${{ env.ACA_RESOURCE_GROUP }}
-          containerAppName: ${{ env.CLIENT_ACA_NAME }}
-          imageToDeploy: ${{ env.ACR_NAME }}/${{ env.CLIENT_IMAGE_REPO }}:${{ env.SHA }}
+          resourceGroup: ${{ secrets.ACA_RESOURCE_GROUP }}
+          containerAppName: ${{ secrets.CLIENT_ACA_NAME }}
+          imageToDeploy: ${{ secrets.ACR_NAME }}/${{ secrets.CLIENT_IMAGE_REPO }}:${{ env.SHA }}
