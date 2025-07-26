@@ -239,7 +239,12 @@ public sealed class GitHubService : IGitHubService
                     return null;
                 }
                 using var downloadClient = _httpClientFactory.CreateClient();
+                downloadClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("DevOpsDashboard", "1.0"));
+                downloadClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github.v3+json"));
+                downloadClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("token", pat);
+
                 var downloadResponse = await downloadClient.GetAsync(redirectUrl);
+
                 downloadResponse.EnsureSuccessStatusCode();
                 var contentBytes = await downloadResponse.Content.ReadAsByteArrayAsync();
                 var fileName = downloadResponse.Content.Headers.ContentDisposition?.FileNameStar ?? downloadResponse.Content.Headers.ContentDisposition?.FileName?.Trim('"') ?? $"logs_{runId}.zip";
