@@ -16,6 +16,12 @@ var builder = WebApplication.CreateBuilder(args);
 var cfg = builder.Configuration;
 var svc = builder.Services;
 
+// ───── LOGGING  ────────────
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
+// ───── BUILDING  ──────────────────────────────────────────────────────────
 Console.WriteLine("KESTREL: Application builder created.");
 
 // ─────  DATABASE  ───────────────────────────────────────────────────────────────
@@ -52,23 +58,25 @@ svc.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             OnMessageReceived = ctx =>
             {
+                var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
                 if (ctx.Request.Cookies.TryGetValue("DevopsUserToken", out var tok))
                 {
-                   Console.WriteLine($"TOKEN: {tok}");
                    ctx.Token = tok;
                 }
                 return Task.CompletedTask;
             },
             OnAuthenticationFailed = ctx =>
             {
-                Console.WriteLine("JWT FAIL → "
-                    + ctx.Exception.GetType().Name + " – " + ctx.Exception.Message);
+                var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
+                logger.LogError(ctx.Exception, "JWT authentication failed → {ExceptionType} – {ExceptionMessage}",
+                    ctx.Exception.GetType().Name, ctx.Exception.Message);
                 return Task.CompletedTask;
             },
             OnTokenValidated = ctx =>
             {
-                Console.WriteLine("JWT OK → user id "
-                    + ctx.Principal!.FindFirst("id")?.Value);
+                var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
+                logger.LogInformation("JWT OK → user id {UserId}",
+                    ctx.Principal!.FindFirst("id")?.Value);
                 return Task.CompletedTask;
             }
         };
