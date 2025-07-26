@@ -142,10 +142,14 @@ public async Task<ActionResult> DownloadWorkflowRunLogs(long runId)
 
     var split = ownerRepo.Split('/');
     if (split.Length != 2) return StatusCode(500, "Invalid Owner/Repo format.");
-    var file = await _githubService.DownloadWorkflowRunLogsAsync(userId, split[0], split[1], runId);
-    return file is null
-        ? NotFound($"Logs for run {runId} not found for {ownerRepo}.")
-        : File(file.Content, file.ContentType, file.FileName);
+    var (owner, repo) = (split[0], split[1]);
+
+    
+    var file = await _githubService.DownloadWorkflowRunLogsWithPatAsync(owner, repo, runId, pat);
+    if (file == null)
+        return NotFound($"Logs for run {runId} not found for {ownerRepo}.");
+
+    return File(file.Content, file.ContentType, file.FileName);
 }
 
 [HttpGet("workflows/artifacts/{artifactId}/zip")]

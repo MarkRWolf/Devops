@@ -224,51 +224,47 @@ public sealed class GitHubService : IGitHubService
     }
 
     public async Task<GitHubFileContent?> DownloadWorkflowRunLogsWithPatAsync(string owner, string repo, long runId, string pat)
+{
+    using var client = CreateGitHubClient(pat);
+    var url = $"https://api.github.com/repos/{owner}/{repo}/actions/runs/{runId}/logs";
+
+    try
     {
-        using var client = CreateGitHubClient(pat);
-        var url = $"https://api.github.com/repos/{owner}/{repo}/actions/runs/{runId}/logs";
-        try
+        var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+        if ((int)response.StatusCode >= 300 && (int)response.StatusCode < 400 && response.Headers.Location is Uri redirect)
         {
-            var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-            if (response.StatusCode == HttpStatusCode.Found || response.StatusCode == HttpStatusCode.TemporaryRedirect)
-            {
-                var redirectUrl = response.Headers.Location?.ToString();
-                if (string.IsNullOrEmpty(redirectUrl))
-                {
-                    _logger.LogError("Redirect URL not found for logs download for {Owner}/{Repo}/{RunId} with provided PAT", owner, repo, runId);
-                    return null;
-                }
-                using var downloadClient = _httpClientFactory.CreateClient();
-                downloadClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("DevOpsDashboard", "1.0"));
-                downloadClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github.v3+json"));
-                downloadClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("token", pat);
+            using var redirectClient = _httpClientFactory.CreateClient();
+            redirectClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("DevOpsDashboard", "1.0"));
+            var redirected = await redirectClient.GetAsync(redirect);
+            redirected.EnsureSuccessStatusCode();
+            var bytes = await redirected.Content.ReadAsByteArrayAsync();
+            var fileName = redirected.Content.Headers.ContentDisposition?.FileNameStar
+                ?? redirected.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+                ?? $"logs_{runId}.zip";
+            var contentType = redirected.Content.Headers.ContentType?.ToString() ?? "application/zip";
+            return new GitHubFileContent { Content = bytes, FileName = fileName, ContentType = contentType };
+        }
 
-                var downloadResponse = await downloadClient.GetAsync(redirectUrl);
+        if (response.IsSuccessStatusCode)
+        {
+            var bytes = await response.Content.ReadAsByteArrayAsync();
+            var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+                ?? response.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+                ?? $"logs_{runId}.zip";
+            var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/zip";
+            return new GitHubFileContent { Content = bytes, FileName = fileName, ContentType = contentType };
+        }
 
-                downloadResponse.EnsureSuccessStatusCode();
-                var contentBytes = await downloadResponse.Content.ReadAsByteArrayAsync();
-                var fileName = downloadResponse.Content.Headers.ContentDisposition?.FileNameStar ?? downloadResponse.Content.Headers.ContentDisposition?.FileName?.Trim('"') ?? $"logs_{runId}.zip";
-                var contentType = downloadResponse.Content.Headers.ContentType?.ToString() ?? "application/zip";
-                return new GitHubFileContent { Content = contentBytes, FileName = fileName, ContentType = contentType };
-            }
-            else
-            {
-                response.EnsureSuccessStatusCode();
-                _logger.LogError("Unexpected status code {StatusCode} when fetching logs for {Owner}/{Repo}/{RunId} with provided PAT", response.StatusCode, owner, repo, runId);
-                return null;
-            }
-        }
-        catch (HttpRequestException ex)
-        {
-            _logger.LogError(ex, "Error downloading GitHub workflow run logs for {Owner}/{Repo}/{RunId} with provided PAT. Status Code: {StatusCode}", owner, repo, runId, ex.StatusCode);
-            return null;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "An unexpected error occurred while downloading GitHub workflow run logs for {Owner}/{Repo}/{RunId} with provided PAT", owner, repo, runId);
-            return null;
-        }
+        _logger.LogError("Unexpected status {StatusCode} for logs {Owner}/{Repo}/{RunId}", response.StatusCode, owner, repo, runId);
+        return null;
     }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Failed to download logs for {Owner}/{Repo}/{RunId}", owner, repo, runId);
+        return null;
+    }
+}
+
 
     public async Task<List<GitHubArtifact>?> GetWorkflowRunArtifactsWithPatAsync(string owner, string repo, long runId, string pat)
     {
