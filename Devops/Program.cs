@@ -9,6 +9,8 @@ using Devops.Services.Interfaces;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.DataProtection;
 using System.Text.Json;
+using Azure.Identity;
+
 
 var builder = WebApplication.CreateBuilder(args);
 var cfg = builder.Configuration;
@@ -25,9 +27,21 @@ svc.AddIdentityCore<DevopsUser>(o => o.Password.RequireNonAlphanumeric = false)
     .AddRoles<IdentityRole<Guid>>()
     .AddEntityFrameworkStores<DevopsDb>();
 
-svc.AddDataProtection()
-    .SetApplicationName("Devops")
-    .PersistKeysToFileSystem(new DirectoryInfo("/app/dpkeys"));
+// ─────  DATA PROTECTION  ───────────────────────────
+var blobUri = cfg["AzureBlob:KeyUri"];
+if (!string.IsNullOrEmpty(blobUri))
+{
+    var credential = new DefaultAzureCredential();
+    svc.AddDataProtection()
+        .SetApplicationName("Devops")
+        .PersistKeysToAzureBlobStorage(new Uri(blobUri), credential);
+}
+else
+{
+    svc.AddDataProtection()
+        .SetApplicationName("Devops")
+        .PersistKeysToFileSystem(new DirectoryInfo("/app/dpkeys"));
+}
 
 // ─────  JWT  ────────────────────────────────────────────────────────────────────
 var key = Encoding.UTF8.GetBytes(cfg["JwtSettings:Secret"]!);
