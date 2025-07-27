@@ -26,6 +26,7 @@ jobs:
           export JwtSettings__Secret=dummySecret
           export JwtSettings__Issuer=http://test
           export JwtSettings__Audience=http://test
+          export ConnectionStrings__DevopsDB="Server=(localdb)\\MSSQLLocalDB;Database=DevopsTest;Trusted_Connection=True;TrustServerCertificate=True"
           dotnet test Devops/Devops.sln --logger "trx;LogFileName=test-results.trx"
 
       - name: Upload test results

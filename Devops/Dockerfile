@@ -4,7 +4,8 @@ COPY . .
 
 ENV JwtSettings__Secret=dummySecret \
     JwtSettings__Issuer=http://test \
-    JwtSettings__Audience=http://test
+    JwtSettings__Audience=http://test \
+    ConnectionStrings__DevopsDB="Data Source=:memory:"
 
 RUN dotnet test Devops/Devops.sln --logger "trx;LogFileName=test-results.trx"
 
