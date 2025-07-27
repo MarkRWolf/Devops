@@ -21,6 +21,7 @@ services:
     build:
       context: .
       dockerfile: Devops/Dockerfile
+      target: runtime
     depends_on:
       initdb:
         condition: service_completed_successfully
