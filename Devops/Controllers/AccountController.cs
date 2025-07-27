@@ -39,7 +39,7 @@ public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEn
     public async Task<IActionResult> Login([FromBody] Req r)
     {
         var res = await auth.LoginAsync(r.Email, r.Password);
-        if (res is null || res.User is null) return Unauthorized("Invalid credentials.");
+        if (res is null || res.User is null) return Unauthorized(new { errors = new[] { "Invalid credentials." } });
         Response.Cookies.Append("DevopsUserToken", res.Token!, CookieOpts);
         return Ok(new { res.User, Message = "Login successful." });
     }
