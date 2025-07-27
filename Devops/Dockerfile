@@ -1,3 +1,8 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS test
+WORKDIR /src
+COPY . .
+RUN dotnet test Devops.sln --logger:"trx;LogFileName=test-results.trx"
+
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 COPY . .

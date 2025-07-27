@@ -28,4 +28,10 @@
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1-Preview.1" />
   </ItemGroup>
 
+<!-- Exclude -->
+<ItemGroup>
+    <Compile Remove="Devops.Tests\**\*.cs" />
+    <None    Remove="Devops.Tests\**\*"   />
+  </ItemGroup>
+
 </Project>

@@ -172,3 +172,5 @@ app.MapHealthChecks("/API/health");  // client is served from /API in dev & cont
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }
