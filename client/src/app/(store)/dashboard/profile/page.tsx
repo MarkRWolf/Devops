@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+import DashboardNav from "@/components/dashboardNav/DashboardNav";
 import ProfileMain from "../ProfileMain";
 import { checkAuth } from "@/lib/helpers/checkAuth";
 
@@ -7,7 +8,7 @@ export default async function DashboardProfile() {
 
   return (
     <div>
-      <h1 className="text-center text-xl font-bold">Hi, {user.username}</h1>
+      <DashboardNav slug="/dashboard/profile" />
       <ProfileMain user={user} />
     </div>
   );
