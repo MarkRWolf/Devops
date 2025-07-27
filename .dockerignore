@@ -1,0 +1,15 @@
+**
+!Devops/**
+!Devops.Tests/**
+!client/**
+!nginx.conf
+!docker-compose.yml
+!*.sln
+
+**/bin/
+**/obj/
+client/node_modules/
+.git/
+.vscode/
+Dockerfile*
+docker-compose*

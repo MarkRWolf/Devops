@@ -18,7 +18,9 @@ services:
       "
 
   server:
-    build: ./Devops
+    build:
+      context: .
+      dockerfile: Devops/Dockerfile
     depends_on:
       initdb:
         condition: service_completed_successfully

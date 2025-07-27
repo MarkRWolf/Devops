@@ -1,13 +1,10 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS test
-WORKDIR /src
-COPY . .
-RUN dotnet test Devops.sln --logger:"trx;LogFileName=test-results.trx"
-
+# --- build stage -------------------------------------------------
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 COPY . .
-RUN dotnet publish -c Release -o /app/out
+RUN dotnet publish Devops/Devops.csproj -c Release -o /app/out
 
+# --- runtime stage ----------------------------------------------
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 ENV ASPNETCORE_URLS=http://+:5205
