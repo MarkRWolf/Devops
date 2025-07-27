@@ -1,3 +1,13 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS test
+WORKDIR /src
+COPY . .
+
+ENV JwtSettings__Secret=dummySecret \
+    JwtSettings__Issuer=http://test \
+    JwtSettings__Audience=http://test
+
+RUN dotnet test Devops/Devops.sln --logger "trx;LogFileName=test-results.trx"
+
 # --- build stage -------------------------------------------------
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
