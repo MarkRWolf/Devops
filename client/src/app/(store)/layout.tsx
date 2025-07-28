@@ -1,17 +1,21 @@
 import "../globals.css";
 import PageTransition from "./pageTransition";
+import { ThemeProvider } from "./themeProvider";
+import Header from "@/components/header/Header";
 
-export default function RootLayout({
-  children,
-}: Readonly<{
+interface LayoutProps {
   children: React.ReactNode;
-}>) {
+}
+export default function RootLayout({ children }: LayoutProps) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
-        <PageTransition>
-          <main className="min-h-screen [view-transition-name:page]">{children}</main>
-        </PageTransition>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <Header />
+          <PageTransition>
+            <main className="min-h-screen [view-transition-name:page]">{children}</main>
+          </PageTransition>
+        </ThemeProvider>
       </body>
     </html>
   );

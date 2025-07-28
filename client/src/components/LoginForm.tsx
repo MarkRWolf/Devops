@@ -4,6 +4,7 @@ import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ZodError } from "zod";
 import { signupSchema, loginSchema } from "@/lib/user/userSchema";
+import { Button } from "./ui/button";
 
 /* ─── minimal types ───────────────────────────────── */
 
@@ -73,17 +74,15 @@ export default function LoginForm() {
   /* ─── render ────────────────────────────────────── */
 
   return (
-    <div className="max-w-md mx-auto p-6 bg-white shadow rounded">
-      <h2 className="text-2xl font-bold text-center mb-4">
-        {mode === "login" ? "Login" : "Sign Up"}
-      </h2>
+    <div className="flex flex-col gap-6 max-w-md mx-auto px-6 py-8 bg-card rounded-xl shadow">
+      <h2 className="text-2xl font-bold text-center">{mode === "login" ? "Login" : "Sign Up"}</h2>
 
-      {formError && <p className="mb-4 p-2 rounded bg-red-100 text-red-700">{formError}</p>}
+      {formError && <p className="p-2 rounded bg-red-100 text-destructive">{formError}</p>}
 
       {toast && (
         <p
-          className={`mb-4 p-2 rounded ${
-            toast.type === "error" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
+          className={`p-2 rounded ${
+            toast.type === "error" ? "bg-red-100 text-destructive" : "bg-green-100 text-green-600"
           }`}
         >
           {toast.text}
@@ -109,60 +108,52 @@ export default function LoginForm() {
         {/* Username (signup only) */}
         {mode === "signup" && (
           <div>
-            <label htmlFor="username" className="block font-medium">
+            <label className="block font-medium">
               Username
+              <input
+                id="username"
+                type="text"
+                required
+                value={username}
+                onChange={(e) => setUserName(e.target.value)}
+                className="mt-1 w-full px-3 py-2 border rounded"
+              />
             </label>
-            <input
-              id="username"
-              type="text"
-              required
-              value={username}
-              onChange={(e) => setUserName(e.target.value)}
-              className="mt-1 w-full px-3 py-2 border rounded"
-            />
           </div>
         )}
 
         {/* Password */}
         <div>
-          <label htmlFor="password" className="block font-medium">
+          <label className="block font-medium">
             Password
+            <input
+              id="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 w-full px-3 py-2 border rounded"
+            />
           </label>
-          <input
-            id="password"
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full px-3 py-2 border rounded"
-          />
         </div>
 
-        <button
+        <Button
           type="submit"
           disabled={loading}
-          className="w-full py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
+          className="w-full py-2 text-white rounded text-base hover:bg-indigo-600 bg-indigo-600 disabled:opacity-50"
         >
           {loading ? "Please wait…" : mode === "login" ? "Login" : "Sign Up"}
-        </button>
+        </Button>
       </form>
-
-      <p className="mt-4 text-center text-sm">
-        {mode === "login" ? (
-          <>
-            Don’t have an account?{" "}
-            <button onClick={() => setMode("signup")} className="text-indigo-600 hover:underline">
-              Sign Up
-            </button>
-          </>
-        ) : (
-          <>
-            Already have an account?{" "}
-            <button onClick={() => setMode("login")} className="text-indigo-600 hover:underline">
-              Login
-            </button>
-          </>
-        )}
+      {/* toggle */}
+      <p className="text-center text-sm">
+        {mode === "login" ? "Don't have an account?" : "Already have an account?"} &nbsp;
+        <button
+          onClick={() => setMode(mode === "login" ? "signup" : "login")}
+          className="text-blue-500 hover:underline"
+        >
+          {mode === "login" ? "Sign Up" : "Login"}
+        </button>
       </p>
     </div>
   );

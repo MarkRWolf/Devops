@@ -4,7 +4,15 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend, ChartOptions } from "cha
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-export function WorkflowStatusPie({ success, failed }: { success: number; failed: number }) {
+export function WorkflowStatusPie({
+  success,
+  failed,
+  textColor,
+}: {
+  success: number;
+  failed: number;
+  textColor: string;
+}) {
   const data = {
     labels: ["Succeeded", "Failed"],
     datasets: [
@@ -22,6 +30,10 @@ export function WorkflowStatusPie({ success, failed }: { success: number; failed
     plugins: {
       legend: {
         position: "bottom",
+        labels: {
+          color: textColor,
+          font: { size: 14 },
+        },
         onHover: (_e, _item, legend) =>
           ((legend.chart.canvas as HTMLCanvasElement).style.cursor = "pointer"),
         onLeave: (_e, _item, legend) =>
@@ -31,8 +43,11 @@ export function WorkflowStatusPie({ success, failed }: { success: number; failed
   };
 
   return (
-    <div className="aspect-square w-full">
-      <Pie data={data} options={options} />
+    <div className="w-full flex flex-col gap-4">
+      <div className="text-center font-semibold mb-2">Build/Deploys to ACA</div>
+      <div className="h-4/5">
+        <Pie data={data} options={options} />
+      </div>
     </div>
   );
 }

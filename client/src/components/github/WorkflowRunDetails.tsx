@@ -63,11 +63,11 @@ export default function WorkflowRunDetails({ run, urlInsert }: WorkflowRunDetail
   const download = (url: string) => window.open(url, "_blank");
 
   return (
-    <div className="border rounded-lg p-4 bg-white shadow-sm">
+    <div className="border rounded-lg p-4 bg-card shadow-sm">
       <div className="flex justify-between items-center cursor-pointer" onClick={handleToggle}>
         <div>
-          <h3 className="text-md font-semibold text-gray-800">{run.name}</h3>
-          <p className="text-sm text-gray-600">
+          <h3 className="text-md font-semibold text-card-foreground">{run.name}</h3>
+          <p className="text-sm text-secondary-foreground">
             Status:{" "}
             <span
               className={`font-medium ${
@@ -81,7 +81,7 @@ export default function WorkflowRunDetails({ run, urlInsert }: WorkflowRunDetail
               {run.status} ({run.conclusion ?? "N/A"})
             </span>
           </p>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             Run #{run.run_number} •{" "}
             {new Date(run.created_at).toLocaleString("da-DK", {
               year: "numeric",
@@ -108,7 +108,7 @@ export default function WorkflowRunDetails({ run, urlInsert }: WorkflowRunDetail
         </div>
         <Button variant="ghost" size="sm" className="w-auto px-2">
           {isExpanded ? "Collapse" : "Expand"}
-          <span className="ml-2 text-lg font-bold">{isExpanded ? "−" : "+"}</span>
+          <span className="ml-2 text-lg font-bold">{isExpanded ? "-" : "+"}</span>
         </Button>
       </div>
 
@@ -121,7 +121,7 @@ export default function WorkflowRunDetails({ run, urlInsert }: WorkflowRunDetail
         {isExpanded && (
           <div className="pt-4">
             {isLoading ? (
-              <p className="text-center text-gray-500">Loading…</p>
+              <p className="text-center text-muted-foreground">Loading…</p>
             ) : error ? (
               <p className="text-center text-red-500">{error}</p>
             ) : (
@@ -129,10 +129,10 @@ export default function WorkflowRunDetails({ run, urlInsert }: WorkflowRunDetail
                 <section className="mb-4">
                   <h4 className="text-md font-semibold mb-2">Jobs:</h4>
                   {jobs && jobs.length ? (
-                    <ul className="list-disc pl-5 text-sm text-gray-700">
+                    <ul className="list-disc pl-5 text-sm text-card-foreground">
                       {jobs.map((job) => (
                         <li key={job.id} className="mb-1">
-                          {job.name} – {job.status} ({job.conclusion ?? "N/A"})
+                          {job.name} - {job.status} ({job.conclusion ?? "N/A"})
                           {job.html_url && (
                             <a
                               href={job.html_url}
@@ -148,14 +148,14 @@ export default function WorkflowRunDetails({ run, urlInsert }: WorkflowRunDetail
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-sm text-gray-500">No jobs found.</p>
+                    <p className="text-sm text-muted-foreground">No jobs found.</p>
                   )}
                 </section>
 
                 <section className="mb-4">
                   <h4 className="text-md font-semibold mb-2">Artifacts:</h4>
                   {artifacts && artifacts.length ? (
-                    <ul className="list-disc pl-5 text-sm text-gray-700">
+                    <ul className="list-disc pl-5 text-sm text-card-foreground">
                       {artifacts.map((artifact) => (
                         <li key={artifact.id} className="mb-1">
                           {artifact.name} (
@@ -181,7 +181,7 @@ export default function WorkflowRunDetails({ run, urlInsert }: WorkflowRunDetail
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-sm text-gray-500">No artifacts found.</p>
+                    <p className="text-sm text-muted-foreground">No artifacts found.</p>
                   )}
                 </section>
 

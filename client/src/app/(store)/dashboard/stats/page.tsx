@@ -11,7 +11,7 @@ export default async function DashboardStats() {
 
   return (
     <div>
-      <DashboardNav slug="/dashboard/stats" />
+      <DashboardNav />
       <div>
         <Charts workflowRuns={workflowRuns} />
         <WorkflowRuns runs={workflowRuns} />

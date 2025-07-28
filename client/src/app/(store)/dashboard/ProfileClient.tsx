@@ -94,7 +94,7 @@ const ProfileClient = (props: { user: User }) => {
   }
 
   return (
-    <main className="max-w-5xl mx-auto py-4 px-8 border space-y-2">
+    <main className="bg-card rounded-xl max-w-5xl mx-auto py-4 px-8 border space-y-4">
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-bold">Profile</h1>
         <p>Username: {me.username}</p>
@@ -106,7 +106,7 @@ const ProfileClient = (props: { user: User }) => {
       <form onSubmit={submitPat}>
         <div className="space-y-4">
           <div>
-            <label htmlFor="pat" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="pat" className="block text-sm font-medium text-muted-foreground">
               GitHub PAT
             </label>
             <div className="flex items-center gap-2 max-w-[400px]">
@@ -116,15 +116,16 @@ const ProfileClient = (props: { user: User }) => {
                 required
                 value={patInput}
                 onChange={(e) => setPatInput(e.target.value)}
-                className="w-full px-3 py-2 border rounded shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border rounded shadow-sm"
+                placeholder="PAT (Personal Access Token)"
               />
             </div>
             {PatError && <p className="mt-1 text-sm text-red-600">{PatError}</p>}
           </div>
 
           <div>
-            <label htmlFor="ownerRepo" className="block text-sm font-medium text-gray-700">
-              GitHub Owner/Repository (e.g., owner/repo)
+            <label htmlFor="ownerRepo" className="block text-sm font-medium text-muted-foreground">
+              GitHub Owner/Repo
             </label>
             <div className="flex items-center gap-2 max-w-[400px]">
               <input
@@ -132,8 +133,8 @@ const ProfileClient = (props: { user: User }) => {
                 required
                 value={ownerRepoInput}
                 onChange={(e) => setOwnerRepoInput(e.target.value)}
-                className="w-full px-3 py-2 border rounded shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., octocat/Spoon-Knife"
+                className="w-full px-3 py-2 border rounded shadow-sm"
+                placeholder="owner/repo"
               />
             </div>
             {OwnerRepoError && <p className="mt-1 text-sm text-red-600">{OwnerRepoError}</p>}
