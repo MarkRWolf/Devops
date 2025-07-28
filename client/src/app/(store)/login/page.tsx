@@ -9,11 +9,13 @@ export default async function LoginPage() {
     await new Promise((resolve) => setTimeout(resolve, 200));
     redirect("/dashboard");
   }
+
   return (
-    <main className="text-center space-y-4 py-10">
+    <main className="text-center space-y-4 py-10">h
       <h1 className="text-2xl font-bold">Login</h1>
       <p>Please log in to access your dashboard.</p>
       <LoginForm />
     </main>
   );
 }
+ 
