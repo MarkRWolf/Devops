@@ -8,7 +8,7 @@ interface UserProps {
 const ProfileMain = (props: UserProps) => {
   const user = props.user;
   return (
-    <main className="space-y-4 py-10">
+    <main className="space-y-4 p-10">
       <h1 className="text-center text-xl font-bold">Hi, {user.username}</h1>
       <ProfileClient user={props.user} />
     </main>

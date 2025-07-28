@@ -4,7 +4,6 @@ import { checkAuth } from "@/lib/helpers/checkAuth";
 import { fetchWorkflowRuns } from "@/lib/github/helpers";
 import WorkflowRuns from "@/components/github/WorkflowRuns";
 import Charts from "@/components/charts/Charts";
-import DashboardNav from "@/components/dashboardNav/DashboardNav";
 import { redirect } from "next/navigation";
 
 export default async function DashboardHome() {
@@ -14,11 +13,8 @@ export default async function DashboardHome() {
 
   return (
     <div>
-        <DashboardNav />
-      <div>
-        <Charts workflowRuns={workflowRuns} />
-        <WorkflowRuns runs={workflowRuns} />
-      </div>
+      <Charts workflowRuns={workflowRuns} />
+      <WorkflowRuns runs={workflowRuns} />
     </div>
   );
 }

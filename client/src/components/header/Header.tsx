@@ -8,12 +8,12 @@ import Link from "next/link";
 const Header = () => {
   const segments = useSelectedLayoutSegments();
   const pathname = segments[0] ? `/${segments[0]}` : "/";
-  const links = ["/dashboard", "/login"] as const;
+  const links = ["/dashboard"] as const;
   const router = useRouter();
 
   return (
-    <header className="h-header bg-main border-b dark:border-white/80 border-black">
-      <div className="container-main h-full grid grid-cols-3 items-center">
+    <header className="fixed z-10 w-full h-header bg-background border-b-2 border-sidebar">
+      <div className="max-w-7xl mx-auto h-full grid grid-cols-3 items-center">
         {/* left column - empty as of rn*/}
         <div></div>
 

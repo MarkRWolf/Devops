@@ -3,12 +3,11 @@ import { GitHubWorkflowRun } from "./models";
 // lib/github/stats.ts
 const fmtDate = new Intl.DateTimeFormat("da-DK", {
   timeZone: "Europe/Copenhagen",
-  year: "numeric",
   month: "2-digit",
   day: "2-digit",
 }); // → DD‑MM‑YYYY
 
-const fmtStamp = new Intl.DateTimeFormat("da-DK", {
+/* const fmtStamp = new Intl.DateTimeFormat("da-DK", {
   timeZone: "Europe/Copenhagen",
   year: "numeric",
   month: "2-digit",
@@ -17,7 +16,8 @@ const fmtStamp = new Intl.DateTimeFormat("da-DK", {
   minute: "2-digit",
   second: "2-digit",
   hourCycle: "h23",
-}); // → DD‑MM‑YYYY HH:MM:SS
+}); */
+// → DD‑MM‑YYYY HH:MM:SS
 
 /* EXPORTS */
 
@@ -65,9 +65,9 @@ export function buildSuccessSeries(runs: GitHubWorkflowRun[]) {
 
 export function buildDurationSeries(runs: GitHubWorkflowRun[]) {
   return runs
-    .filter((r) => r.status === "completed")
+    .filter((r, i) => i < 14 && r.status === "completed")
     .map((r) => ({
-      x: fmtStamp.format(new Date(r.created_at)), // full timestamp label
+      x: fmtDate.format(new Date(r.created_at)),
       y: Date.parse(r.updated_at) - Date.parse(r.created_at), // ms
     }));
 }

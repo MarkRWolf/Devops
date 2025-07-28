@@ -43,9 +43,9 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-@keyframes slide-in-page {
+@keyframes slide-in-layout {
   from {
-    transform: translateX(-100%);
+    transform: translateX(100%);
   }
   to {
     transform: translateX(0);
@@ -62,7 +62,7 @@
     z-index: auto !important;
   }
 
-  ::view-transition-image-pair(page) {
+  ::view-transition-image-pair(layout) {
     isolation: isolate;
     will-change: transform;
     z-index: 1;
@@ -73,11 +73,11 @@
     z-index: 999 !important;
   }
 
-  ::view-transition-new(page) {
+  ::view-transition-new(layout) {
     z-index: 99;
-    animation: slide-in-page 0.4s linear forwards;
+    animation: slide-in-layout 0.4s linear forwards;
   }
-  ::view-transition-old(page) {
+  ::view-transition-old(layout) {
     z-index: 1;
   }
 
@@ -86,7 +86,7 @@
   }
 
   .container-main {
-    @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+    @apply w-full;
   }
 
   .h-header {
