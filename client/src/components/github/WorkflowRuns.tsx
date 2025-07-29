@@ -2,6 +2,7 @@
 import { GitHubWorkflowRun } from "@/lib/github/models";
 import WorkflowRunDetails from "./WorkflowRunDetails";
 import { useWorkflowUpdates } from "./WorkflowUpdatesProvider";
+import { baseUrl } from "@/lib/settings";
 
 interface WorkflowRunsProps {
   runs: GitHubWorkflowRun[];
@@ -11,6 +12,7 @@ interface WorkflowRunsProps {
 const WorkflowRuns = ({ runs, project = "" }: WorkflowRunsProps) => {
   const { lastRun } = useWorkflowUpdates();
   const merged = lastRun && lastRun.id !== runs[0]?.id ? [lastRun, ...runs] : runs;
+  console.log("baseUrl", baseUrl);
 
   return (
     <div className="container-main py-6">
