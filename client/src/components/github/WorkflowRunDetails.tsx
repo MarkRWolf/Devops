@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { GitHubWorkflowRun, GitHubJob, GitHubArtifact } from "@/lib/github/models";
+import { baseUrl } from "@/lib/settings";
 
 interface WorkflowRunDetailsProps {
   run: GitHubWorkflowRun;
@@ -21,7 +22,7 @@ export default function WorkflowRunDetails({ run, urlInsert }: WorkflowRunDetail
     setError(null);
 
     try {
-      const base = `/api/github${urlInsert}/workflows/runs/${run.id}`;
+      const base = `${baseUrl}/api/github${urlInsert}/workflows/runs/${run.id}`;
       const [jobsRes, artifactsRes] = await Promise.all([
         fetch(`${base}/jobs`),
         fetch(`${base}/artifacts`),
@@ -51,9 +52,6 @@ export default function WorkflowRunDetails({ run, urlInsert }: WorkflowRunDetail
     }
   }, [run.id, urlInsert]);
 
-  /**
-   * Toggle panel and lazily load details the first time it’s opened.
-   */
   const handleToggle = () => {
     const next = !isExpanded;
     setIsExpanded(next);
@@ -112,7 +110,6 @@ export default function WorkflowRunDetails({ run, urlInsert }: WorkflowRunDetail
         </Button>
       </div>
 
-      {/* Collapsible area — purely CSS */}
       <div
         className={`transition-[max-height,opacity] duration-300 ease-in-out overflow-hidden ${
           isExpanded ? "max-h-[800px] opacity-100" : "max-h-0 opacity-0"
@@ -171,7 +168,7 @@ export default function WorkflowRunDetails({ run, urlInsert }: WorkflowRunDetail
                             onClick={(e) => {
                               e.stopPropagation();
                               download(
-                                `/api/github${urlInsert}/workflows/artifacts/${artifact.id}/zip`
+                                `${baseUrl}/api/github${urlInsert}/workflows/artifacts/${artifact.id}/zip`
                               );
                             }}
                           >
@@ -189,7 +186,7 @@ export default function WorkflowRunDetails({ run, urlInsert }: WorkflowRunDetail
                   <Button
                     onClick={(e) => {
                       e.stopPropagation();
-                      download(`/api/github${urlInsert}/workflows/runs/${run.id}/logs`);
+                      download(`${baseUrl}/api/github${urlInsert}/workflows/runs/${run.id}/logs`);
                     }}
                   >
                     Download All Logs
