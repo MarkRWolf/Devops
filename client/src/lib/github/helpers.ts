@@ -15,12 +15,12 @@ export const fetchWorkflowRuns = async (project: string = ""): Promise<GitHubWor
       },
       credentials: "include",
     };
-
-    const res = await fetch(`${baseUrl}/api/github${project}/workflows/runs`, fetchOptions);
+    const url = `${baseUrl}/api/github${project}/workflows/runs`;
+    const res = await fetch(url, fetchOptions);
 
     if (!res.ok) {
       console.error(
-        `Failed to fetch ${project || "User"} workflow runs:`,
+        `Failed to fetch url: - ${url} - for ${project || "User"} workflow runs:`,
         res.status,
         await res.text()
       );
