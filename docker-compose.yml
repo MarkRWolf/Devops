@@ -33,6 +33,7 @@ services:
       JwtSettings__Audience: http://devops.local
       GitHub__ProjectPat: ${GITHUB_PROJECT_PAT}
       GitHub__ProjectOwnerRepo: "MarkRWolf/Devops"
+      GitHub__WebhookSecret: ${GITHUB_REPO_WEBHOOK_SECRET}
     ports: ["8080:5205"]
     volumes:
       - devops_data_protection_keys:/app/dpkeys
