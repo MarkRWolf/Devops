@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿// Program.cs
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
@@ -126,12 +127,18 @@ svc.AddHealthChecks();
 
 var app = builder.Build();
 
-// Trust X‑Forwarded headers from our proxy
-app.UseForwardedHeaders(new ForwardedHeadersOptions
+// ───── FORWARDED HEADERS ────────────────────
+var forwardedOptions = new ForwardedHeadersOptions
 {
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-});
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor
+                     | ForwardedHeaders.XForwardedProto
+                     | ForwardedHeaders.XForwardedHost
+};
+forwardedOptions.KnownNetworks.Clear();
+forwardedOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedOptions);
 
+// ───── CORS, AUTH, ROUTING ─────────────────
 if (app.Environment.IsDevelopment())
     app.UseCors("Local");
 else
