@@ -24,9 +24,15 @@ builder.Logging.AddDebug();
 // ───── BUILDING  ──────────────────────────────────────────────────────────
 Console.WriteLine("KESTREL: Application builder created.");
 
-// ─────  DATABASE  ───────────────────────────────────────────────────────────────
-svc.AddDbContext<DevopsDb>(o =>
-    o.UseSqlServer(cfg.GetConnectionString("DevopsDB")));
+// ───── DATABASE ────────────────────────────────────────
+svc.AddDbContext<DevopsDb>(opt =>
+{
+    if (cfg.GetValue<bool>("UseSqliteForTests"))
+        opt.UseSqlite(cfg.GetConnectionString("DevopsDB"));
+    else
+        opt.UseSqlServer(cfg.GetConnectionString("DevopsDB"));
+});
+
 
 // ─────  IDENTITY  ────────────────────────────────────    ───────────────────────────
 svc.AddIdentityCore<DevopsUser>(o => o.Password.RequireNonAlphanumeric = false)
@@ -137,17 +143,22 @@ builder.WebHost.ConfigureKestrel(o => o.AddServerHeader = false);
 var app = builder.Build();
 Console.WriteLine("KESTREL: Application building complete, starting to run...");
 
+// ─────  DATABASE  ───────────────────────────────────────────────────────────────
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<DevopsDb>();
+
+    // Use in‑memory SQLite during tests, full migrations everywhere else
+    if (cfg.GetValue<bool>("UseSqliteForTests"))
+        await db.Database.EnsureCreatedAsync();
+    else
+        await db.Database.MigrateAsync();
+}
+
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 });
-
-/* ---------- CREATE DB + TABLES ---------- */
-await using (var scope = app.Services.CreateAsyncScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<DevopsDb>();
-    await db.Database.MigrateAsync();
-}
 
 // ─────  ROLE SEED  ──────────────────────────────────────────────────────────────
 await using (var scope = app.Services.CreateAsyncScope())
@@ -173,4 +184,4 @@ app.MapControllers();
 
 app.Run();
 
-public partial class Program{}
+public partial class Program { }
