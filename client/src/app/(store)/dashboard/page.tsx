@@ -5,6 +5,7 @@ import { fetchWorkflowRuns } from "@/lib/github/helpers";
 import WorkflowRuns from "@/components/github/WorkflowRuns";
 import Charts from "@/components/charts/Charts";
 import { redirect } from "next/navigation";
+import { WorkflowUpdatesProvider } from "@/components/github/WorkflowUpdatesProvider";
 
 export default async function DashboardHome() {
   const user = await checkAuth();
@@ -14,7 +15,9 @@ export default async function DashboardHome() {
   return (
     <div>
       <Charts workflowRuns={workflowRuns} />
-      <WorkflowRuns runs={workflowRuns} project="/project" />
+      <WorkflowUpdatesProvider initialRun={workflowRuns[0]}>
+        <WorkflowRuns runs={workflowRuns} project="/project" />
+      </WorkflowUpdatesProvider>
     </div>
   );
 }

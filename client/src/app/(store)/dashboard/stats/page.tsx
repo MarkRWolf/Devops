@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import Charts from "@/components/charts/Charts";
 import WorkflowRuns from "@/components/github/WorkflowRuns";
+import { WorkflowUpdatesProvider } from "@/components/github/WorkflowUpdatesProvider";
 import { fetchWorkflowRuns } from "@/lib/github/helpers";
 import { checkAuth } from "@/lib/helpers/checkAuth";
 
@@ -12,7 +13,9 @@ export default async function DashboardStats() {
     <div>
       <div>
         <Charts workflowRuns={workflowRuns} />
-        <WorkflowRuns runs={workflowRuns} />
+        <WorkflowUpdatesProvider initialRun={workflowRuns[0]}>
+          <WorkflowRuns runs={workflowRuns} project="/project" />
+        </WorkflowUpdatesProvider>
       </div>
     </div>
   );
