@@ -1,7 +1,7 @@
 "use client";
 import { GitHubWorkflowRun } from "@/lib/github/models";
 import WorkflowRunDetails from "./WorkflowRunDetails";
-import { useWorkflowUpdates } from "./WorkflowUpdatesProvider";
+import { useWorkflowUpdates, WorkflowUpdatesProvider } from "./WorkflowUpdatesProvider";
 import { baseUrl } from "@/lib/settings";
 
 interface WorkflowRunsProps {
@@ -15,21 +15,23 @@ const WorkflowRuns = ({ runs, project = "" }: WorkflowRunsProps) => {
   console.log("baseUrl", baseUrl);
 
   return (
-    <div className="container-main py-6">
-      <h2 className="text-2xl font-semibold mb-8 text-center">Workflow Runs</h2>
-      {merged.length > 0 ? (
-        <div className="max-w-7xl mx-auto py-4 px-8 border space-y-2">
-          <h2 className="text-lg font-semibold mb-4">Latest Project Workflow Runs:</h2>
-          <div className="flex flex-col gap-4">
-            {merged.map((run) => (
-              <WorkflowRunDetails key={run.id} run={run} urlInsert={project} />
-            ))}
+    <WorkflowUpdatesProvider initialRun={runs[0]}>
+      <div className="container-main py-6">
+        <h2 className="text-2xl font-semibold mb-8 text-center">Workflow Runs</h2>
+        {merged.length > 0 ? (
+          <div className="max-w-7xl mx-auto py-4 px-8 border space-y-2">
+            <h2 className="text-lg font-semibold mb-4">Latest Project Workflow Runs:</h2>
+            <div className="flex flex-col gap-4">
+              {merged.map((run) => (
+                <WorkflowRunDetails key={run.id} run={run} urlInsert={project} />
+              ))}
+            </div>
           </div>
-        </div>
-      ) : (
-        <p>No project workflow runs found or configured.</p>
-      )}
-    </div>
+        ) : (
+          <p>No project workflow runs found or configured.</p>
+        )}
+      </div>
+    </WorkflowUpdatesProvider>
   );
 };
 

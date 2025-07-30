@@ -4,7 +4,6 @@ export const dynamic = "force-dynamic";
 import WorkflowRuns from "@/components/github/WorkflowRuns";
 import { fetchWorkflowRuns } from "@/lib/github/helpers";
 import Charts from "@/components/charts/Charts";
-import { WorkflowUpdatesProvider } from "@/components/github/WorkflowUpdatesProvider";
 
 export default async function Home() {
   const projectWorkflowRuns = await fetchWorkflowRuns("/project");
@@ -13,9 +12,7 @@ export default async function Home() {
     <div className="flex flex-col items-center gap-4 mt-10">
       <h1 className="text-xl">Welcome to my Devops Dashboard</h1>
       <Charts workflowRuns={projectWorkflowRuns} />
-      <WorkflowUpdatesProvider initialRun={projectWorkflowRuns[0]}>
-        <WorkflowRuns runs={projectWorkflowRuns} project="/project" />
-      </WorkflowUpdatesProvider>
+      <WorkflowRuns runs={projectWorkflowRuns} project="/project" />
     </div>
   );
 }
