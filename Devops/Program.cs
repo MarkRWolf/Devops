@@ -10,141 +10,146 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.DataProtection;
 using System.Text.Json;
 using Azure.Identity;
-using Devops.Hubs; // SignalR hub namespace
+
 
 var builder = WebApplication.CreateBuilder(args);
 var cfg = builder.Configuration;
 var svc = builder.Services;
 
-// ───── LOGGING ─────────────────────────────────
+// ───── LOGGING  ────────────
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
-// ───── DATABASE ──────────────────────────────
-svc.AddDbContext<DevopsDb>(opt =>
-{
-    if (cfg.GetValue<bool>("UseSqliteForTests"))
-        opt.UseSqlite(cfg.GetConnectionString("DevopsDB"));
-    else
-        opt.UseSqlServer(cfg.GetConnectionString("DevopsDB"));
-});
+// ───── BUILDING  ──────────────────────────────────────────────────────────
+Console.WriteLine("KESTREL: Application builder created.");
 
-// ───── IDENTITY ──────────────────────────────
+// ─────  DATABASE  ───────────────────────────────────────────────────────────────
+svc.AddDbContext<DevopsDb>(o =>
+    o.UseSqlServer(cfg.GetConnectionString("DevopsDB")));
+
+// ─────  IDENTITY  ────────────────────────────────────    ───────────────────────────
 svc.AddIdentityCore<DevopsUser>(o => o.Password.RequireNonAlphanumeric = false)
-   .AddRoles<IdentityRole<Guid>>()
-   .AddEntityFrameworkStores<DevopsDb>();
+    .AddRoles<IdentityRole<Guid>>()
+    .AddEntityFrameworkStores<DevopsDb>();
 
-// ───── DATA PROTECTION ───────────────────────
+// ─────  DATA PROTECTION  ───────────────────────────
 var blobUri = cfg["AzureBlob:KeyUri"];
 if (!string.IsNullOrEmpty(blobUri))
 {
     var credential = new DefaultAzureCredential();
     svc.AddDataProtection()
-       .SetApplicationName("Devops")
-       .PersistKeysToAzureBlobStorage(new Uri(blobUri), credential);
+        .SetApplicationName("Devops")
+        .PersistKeysToAzureBlobStorage(new Uri(blobUri), credential);
 }
 else
 {
     svc.AddDataProtection()
-       .SetApplicationName("Devops")
-       .PersistKeysToFileSystem(new DirectoryInfo("/app/dpkeys"));
+        .SetApplicationName("Devops")
+        .PersistKeysToFileSystem(new DirectoryInfo("/app/dpkeys"));
 }
 
-// ───── JWT & AUTHENTICATION ─────────────────
+// ─────  JWT  ────────────────────────────────────────────────────────────────────
 var key = Encoding.UTF8.GetBytes(cfg["JwtSettings:Secret"]!);
 svc.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-   .AddJwtBearer(o =>
-   {
-       o.Events = new JwtBearerEvents
-       {
-           OnMessageReceived = ctx =>
-           {
-               if (ctx.Request.Cookies.TryGetValue("DevopsUserToken", out var tok))
+    .AddJwtBearer(o =>
+    {
+        o.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = ctx =>
+            {
+                var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
+                if (ctx.Request.Cookies.TryGetValue("DevopsUserToken", out var tok))
+                {
                    ctx.Token = tok;
-               return Task.CompletedTask;
-           },
-           OnAuthenticationFailed = ctx =>
-           {
-               var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
-               logger.LogError(ctx.Exception, "JWT authentication failed → {ExceptionType} – {ExceptionMessage}",
-                   ctx.Exception.GetType().Name, ctx.Exception.Message);
-               return Task.CompletedTask;
-           },
-           OnTokenValidated = ctx =>
-           {
-               var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
-               logger.LogInformation("JWT OK → user id {UserId}", ctx.Principal!.FindFirst("id")?.Value);
-               return Task.CompletedTask;
-           }
-       };
+                }
+                return Task.CompletedTask;
+            },
+            OnAuthenticationFailed = ctx =>
+            {
+                var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
+                logger.LogError(ctx.Exception, "JWT authentication failed → {ExceptionType} – {ExceptionMessage}",
+                    ctx.Exception.GetType().Name, ctx.Exception.Message);
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = ctx =>
+            {
+                var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
+                logger.LogInformation("JWT OK → user id {UserId}",
+                    ctx.Principal!.FindFirst("id")?.Value);
+                return Task.CompletedTask;
+            }
+        };
 
-       o.TokenValidationParameters = new TokenValidationParameters
-       {
-           ValidateIssuerSigningKey = true,
-           IssuerSigningKey = new SymmetricSecurityKey(key),
-           ValidateIssuer = true,
-           ValidIssuer = cfg["JwtSettings:Issuer"]!,
-           ValidateAudience = true,
-           ValidAudience = cfg["JwtSettings:Audience"]!,
-           ValidateLifetime = true,
-           ClockSkew = TimeSpan.FromMinutes(2)
-       };
-   });
+        var issuer = cfg["JwtSettings:Issuer"] ?? throw new Exception("Issuer missing");
+        var audience = cfg["JwtSettings:Audience"] ?? throw new Exception("Audience missing");
 
-// ───── CORS ─────────────────────────────────
-svc.AddCors(options =>
-{
-    options.AddPolicy(name: "Local", // Changed policy name to "Local" for consistency
-        builder => builder
-            .WithOrigins("http://localhost:3000")
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials());
+        o.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key),
 
-    // ADDED Production CORS Policy
-    options.AddPolicy(name: "Production",
-        builder => builder
-            .WithOrigins("https://webhookrelay.thankfulglacier-8f9db822.northeurope.azurecontainerapps.io")
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials());
-});
+            ValidateIssuer = true,
+            ValidIssuer = issuer,
 
-// ───── AUTHORIZATION & SIGNALR ──────────────
+            ValidateAudience = true,
+            ValidAudience = audience,
+
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromMinutes(2)
+        };
+    });
+
+    // Add CORS services
+    svc.AddCors(options =>
+    {
+        options.AddPolicy(name: "local",
+                             builder =>
+                             {
+                                 builder.WithOrigins("http://localhost:3000")
+                                     .AllowAnyHeader()
+                                     .AllowAnyMethod()
+                                     .AllowCredentials();
+                             });
+    });
+
 svc.AddAuthorization();
-svc.AddSignalR();
-
-// ───── APPLICATION SERVICES ─────────────────
 svc.AddScoped<IAuthService, AuthService>();
 svc.AddScoped<IPatService, PatService>();
 svc.AddScoped<IGitHubService, GitHubService>();
 svc.AddHttpClient();
-svc.AddLogging();
+svc.AddLogging(); 
 
-svc.AddControllers()
-   .AddJsonOptions(o => o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
+builder.Services.AddControllers()
+       .AddJsonOptions(o =>
+           o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
 
-svc.AddHealthChecks();
+svc.AddHealthChecks(); 
 
-var app = builder.Build();
-
-app.Use(async (context, next) =>
+svc.Configure<IdentityOptions>(o =>
 {
-    context.Request.EnableBuffering();
-    await next();
+    o.User.RequireUniqueEmail = true;
 });
 
-// ───── DATABASE MIGRATIONS & SEED ──────────
+
+builder.WebHost.ConfigureKestrel(o => o.AddServerHeader = false);
+
+var app = builder.Build();
+Console.WriteLine("KESTREL: Application building complete, starting to run...");
+
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
+/* ---------- CREATE DB + TABLES ---------- */
 await using (var scope = app.Services.CreateAsyncScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<DevopsDb>();
-    if (cfg.GetValue<bool>("UseSqliteForTests"))
-        await db.Database.EnsureCreatedAsync();
-    else
-        await db.Database.MigrateAsync();
+    await db.Database.MigrateAsync();
 }
 
+// ─────  ROLE SEED  ──────────────────────────────────────────────────────────────
 await using (var scope = app.Services.CreateAsyncScope())
 {
     var rm = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
@@ -153,31 +158,17 @@ await using (var scope = app.Services.CreateAsyncScope())
             await rm.CreateAsync(new IdentityRole<Guid>(r));
 }
 
-// ───── HTTP PIPELINE ────────────────────────
-app.UseForwardedHeaders(new ForwardedHeadersOptions
-{
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-});
-
-// Use CORS policy based on environment
+// ─────  PIPELINE  ───────────────────────────────────────────────────────────────
 if (app.Environment.IsDevelopment())
-    app.UseCors("Local"); // Use "Local" policy in Development
-else
-    app.UseCors("Production"); // Use "Production" policy otherwise (e.g., in Azure)
-
+{
+    app.UseCors("local"); 
+}
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapHealthChecks("/health");
-app.MapHealthChecks("/API/health");
+app.MapHealthChecks("/health"); // for azures internal health check
+app.MapHealthChecks("/API/health");  // client is served from /API in dev & container & ACR
 
-// Apply CORS to SignalR Hub conditionally based on environment
-app.MapHub<WorkflowHub>("/WS/workflowHub")
-    .RequireCors(app.Environment.IsDevelopment() ? "Local" : "Production"); // Apply correct CORS policy
 app.MapControllers();
 
-// ───── SIGNALR HUB ─────────────────────────
-
 app.Run();
-
-public partial class Program { }
