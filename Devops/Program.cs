@@ -1,16 +1,17 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿// Program.cs
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using Devops.Data;
-using Devops.Services;
-using Devops.Services.Interfaces;
-using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.DataProtection;
 using System.Text.Json;
 using Azure.Identity;
-using Devops.Hubs; // SignalR hub namespace
+using Devops.Data;
+using Devops.Hubs;
+using Devops.Services;
+using Devops.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 var cfg = builder.Configuration;
@@ -95,12 +96,17 @@ svc.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // ───── CORS ─────────────────────────────────
 svc.AddCors(options =>
 {
-    options.AddPolicy(name: "local",
-        builder => builder
-            .WithOrigins("http://localhost:3000")
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials());
+    options.AddPolicy("Local", policy =>
+        policy.WithOrigins("http://localhost:3000")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials());
+
+    options.AddPolicy("Production", policy =>
+        policy.WithOrigins("https://webhookrelay.thankfulglacier-8f9db822.northeurope.azurecontainerapps.io")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials());
 });
 
 // ───── AUTHORIZATION & SIGNALR ──────────────
@@ -121,48 +127,33 @@ svc.AddHealthChecks();
 
 var app = builder.Build();
 
-app.Use(async (context, next) =>
+// ───── FORWARDED HEADERS ────────────────────
+var forwardedOptions = new ForwardedHeadersOptions
 {
-    context.Request.EnableBuffering();
-    await next();
-});
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor
+                     | ForwardedHeaders.XForwardedProto
+                     | ForwardedHeaders.XForwardedHost
+};
+forwardedOptions.KnownNetworks.Clear();
+forwardedOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedOptions);
 
-// ───── DATABASE MIGRATIONS & SEED ──────────
-await using (var scope = app.Services.CreateAsyncScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<DevopsDb>();
-    if (cfg.GetValue<bool>("UseSqliteForTests"))
-        await db.Database.EnsureCreatedAsync();
-    else
-        await db.Database.MigrateAsync();
-}
-
-await using (var scope = app.Services.CreateAsyncScope())
-{
-    var rm = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
-    foreach (var r in new[] { "User", "Admin" })
-        if (!await rm.RoleExistsAsync(r))
-            await rm.CreateAsync(new IdentityRole<Guid>(r));
-}
-
-// ───── HTTP PIPELINE ────────────────────────
-app.UseForwardedHeaders(new ForwardedHeadersOptions
-{
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-});
-
+// ───── CORS, AUTH, ROUTING ─────────────────
 if (app.Environment.IsDevelopment())
-    app.UseCors("local");
+    app.UseCors("Local");
+else
+    app.UseCors("Production");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapHealthChecks("/health");
 app.MapHealthChecks("/API/health");
-app.MapHub<WorkflowHub>("/WS/workflowHub");
-app.MapControllers();
 
-// ───── SIGNALR HUB ─────────────────────────
+app.MapHub<WorkflowHub>("/WS/workflowHub")
+   .RequireCors(app.Environment.IsDevelopment() ? "Local" : "Production");
+
+app.MapControllers();
 
 app.Run();
 
