@@ -1,8 +1,3 @@
-### ---------- test stage ----------
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS test
-WORKDIR /src
-COPY . .
-
 # --- build stage -------------------------------------------------
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
