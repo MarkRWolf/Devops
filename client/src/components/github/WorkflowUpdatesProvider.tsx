@@ -1,6 +1,7 @@
 // client/src/components/github/WorkflowUpdatesProvider.tsx
 "use client";
 import { ReactNode, createContext, useContext, useState, useEffect } from "react";
+import { HubConnectionState } from "@microsoft/signalr";
 import { getWorkflowHub } from "@/lib/signalr";
 import { GitHubWorkflowRun } from "@/lib/github/models";
 
@@ -19,12 +20,19 @@ export function WorkflowUpdatesProvider({
 
   useEffect(() => {
     const hub = getWorkflowHub();
-    hub.start().catch(console.error);
+
+    if (hub.state === HubConnectionState.Disconnected) {
+      hub.start().catch(console.error);
+    }
+
     const onReceive = (run: GitHubWorkflowRun) => setLastRun(run);
     hub.on("ReceiveWorkflowRun", onReceive);
+
     return () => {
       hub.off("ReceiveWorkflowRun", onReceive);
-      hub.stop();
+      if (hub.state !== HubConnectionState.Disconnected) {
+        hub.stop();
+      }
     };
   }, []);
 
