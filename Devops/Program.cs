@@ -143,7 +143,7 @@ app.UseAuthorization();
 app.MapHealthChecks("/health");
 app.MapHealthChecks("/API/health");
 
-app.MapHub<WorkflowHub>("/WS/workflowHub")
+app.MapHub<WorkflowHub>("/WS/workflowHub/")
    .RequireCors(app.Environment.IsDevelopment() ? "Local" : "Production");
 
 app.MapControllers();
