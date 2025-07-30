@@ -95,9 +95,17 @@ svc.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // ───── CORS ─────────────────────────────────
 svc.AddCors(options =>
 {
-    options.AddPolicy(name: "local",
+    options.AddPolicy(name: "Local", // Changed policy name to "Local" for consistency
         builder => builder
             .WithOrigins("http://localhost:3000")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials());
+
+    // ADDED Production CORS Policy
+    options.AddPolicy(name: "Production",
+        builder => builder
+            .WithOrigins("https://webhookrelay.thankfulglacier-8f9db822.northeurope.azurecontainerapps.io")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials());
@@ -151,15 +159,21 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 });
 
+// Use CORS policy based on environment
 if (app.Environment.IsDevelopment())
-    app.UseCors("local");
+    app.UseCors("Local"); // Use "Local" policy in Development
+else
+    app.UseCors("Production"); // Use "Production" policy otherwise (e.g., in Azure)
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapHealthChecks("/health");
 app.MapHealthChecks("/API/health");
-app.MapHub<WorkflowHub>("/WS/workflowHub");
+
+// Apply CORS to SignalR Hub conditionally based on environment
+app.MapHub<WorkflowHub>("/WS/workflowHub")
+    .RequireCors(app.Environment.IsDevelopment() ? "Local" : "Production"); // Apply correct CORS policy
 app.MapControllers();
 
 // ───── SIGNALR HUB ─────────────────────────
