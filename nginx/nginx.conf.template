@@ -1,8 +1,6 @@
 worker_processes 1;
 events { worker_connections 1024; }
 
-# works for all except WS
-
 http {
   map $http_upgrade $connection_upgrade {
     default   upgrade;
@@ -13,26 +11,22 @@ http {
     listen 80;
     server_name _;
 
-    location = /WS/workflowHub {
-      return 308 /WS/workflowHub/;
-    }
-
-    location ^~ /WS/workflowHub/ {
-      proxy_pass            http://$API_INTERNAL_HOST:5205; # Kestrel is HTTP, on port 5205
+    # Reverted: Proxy Host header for WS back to original $host
+    location ^~ /WS/workflowHub {
+      proxy_pass                http://$API_INTERNAL_HOST:5205; # Kestrel is HTTP, on port 5205
       proxy_http_version 1.1;
-      # Removed proxy_ssl_server_name on; as backend is HTTP
-      proxy_set_header    Upgrade            $http_upgrade;
-      proxy_set_header    Connection        $connection_upgrade;
-      proxy_set_header    Host              $host; # Crucial for CORS and SignalR
-      proxy_set_header    X-Real-IP         $remote_addr;
-      proxy_set_header    X-Forwarded-For   $proxy_add_x_forwarded_for;
-      proxy_set_header    X-Forwarded-Proto $scheme;
-      proxy_redirect      off;
-      proxy_read_timeout      300s;
-      proxy_send_timeout      300s;
-      proxy_connect_timeout   300s;
+      proxy_set_header Upgrade  $http_upgrade;
+      proxy_set_header Connection $connection_upgrade;
+      proxy_set_header Host     $host; # REVERTED: Now passes original client host
+      proxy_set_header X-Real-IP           $remote_addr;
+      proxy_set_header X-Forwarded-For     $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+      proxy_redirect            off;
+      proxy_read_timeout        86400s; # Long timeout for persistent WebSocket connections
+      proxy_send_timeout        300s;
+      proxy_connect_timeout     300s;
     }
-
+    
     location ^~ /API/ {
       proxy_pass         https://$API_INTERNAL_HOST;
       proxy_http_version 1.1;

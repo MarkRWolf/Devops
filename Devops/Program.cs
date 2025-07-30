@@ -131,6 +131,23 @@ var app = builder.Build();
 
 app.Use(async (context, next) =>
 {
+    // Log all requests for the SignalR path, regardless of method
+    if (context.Request.Path.StartsWithSegments("/WS/workflowHub"))
+    {
+        app.Logger.LogDebug("--- SignalR DEBUG Request START ---");
+        app.Logger.LogDebug("Method: {Method}", context.Request.Method);
+        app.Logger.LogDebug("Path: {Path}", context.Request.Path);
+        app.Logger.LogDebug("QueryString: {QueryString}", context.Request.QueryString);
+        app.Logger.LogDebug("Host Header: {Host}", context.Request.Headers["Host"].ToString());
+        app.Logger.LogDebug("X-Forwarded-Proto: {XForwardedProto}", context.Request.Headers["X-Forwarded-Proto"].ToString());
+        app.Logger.LogDebug("X-Forwarded-For: {XForwardedFor}", context.Request.Headers["X-Forwarded-For"].ToString());
+        app.Logger.LogDebug("--- SignalR DEBUG Request END ---");
+    }
+    await next(context);
+});
+
+app.Use(async (context, next) =>
+{
     context.Request.EnableBuffering();
     await next();
 });
