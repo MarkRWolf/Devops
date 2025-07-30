@@ -2,18 +2,24 @@ worker_processes 1;
 events { worker_connections 1024; }
 
 http {
+  # WebSocket “Connection: upgrade” helper
   map $http_upgrade $connection_upgrade {
-    default   upgrade;
-    ""        close;
+    default upgrade;
+    ""      close;
   }
 
   server {
     listen 80;
     server_name _;
 
-    # ─── SignalR WebSocket & negotiate ───────────────────────────────
-    location ^~ /WS/workflowHub {
-      proxy_pass         http://$API_INTERNAL_HOST;
+    # Redirect the non‑slash URL to the slash URL
+    location = /WS/workflowHub {
+      return 308 /WS/workflowHub/;
+    }
+
+    # SignalR hub (must match the exact path Compose used)
+    location ^~ /WS/workflowHub/ {
+      proxy_pass         http://$API_INTERNAL_HOST:80/WS/workflowHub/;
       proxy_http_version 1.1;
       proxy_set_header   Upgrade           $http_upgrade;
       proxy_set_header   Connection        $connection_upgrade;
@@ -23,37 +29,34 @@ http {
       proxy_set_header   X-Forwarded-Proto $scheme;
     }
 
-    # ─── API endpoints (uppercase) ────────────────────────────────
+    # .NET API (uppercase)
     location ^~ /API/ {
-      proxy_pass         http://$API_INTERNAL_HOST;
+      proxy_pass         http://$API_INTERNAL_HOST:80/API/;
       proxy_http_version 1.1;
-      proxy_set_header   Host              $API_INTERNAL_HOST;
+      proxy_set_header   Host              $host;
       proxy_set_header   X-Real-IP         $remote_addr;
       proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
       proxy_set_header   X-Forwarded-Proto $scheme;
-      proxy_redirect     off;
     }
 
-    # ─── API endpoints (lowercase) ────────────────────────────────
+    # .NET API (lowercase)
     location ^~ /api/ {
-      proxy_pass         http://$API_INTERNAL_HOST/API/;
+      proxy_pass         http://$API_INTERNAL_HOST:80/api/;
       proxy_http_version 1.1;
-      proxy_set_header   Host              $API_INTERNAL_HOST;
+      proxy_set_header   Host              $host;
       proxy_set_header   X-Real-IP         $remote_addr;
       proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
       proxy_set_header   X-Forwarded-Proto $scheme;
-      proxy_redirect     off;
     }
 
-    # ─── Everything else (front‑end web) ───────────────────────────
+    # Front‑end UI
     location / {
-      proxy_pass         http://$WEB_INTERNAL_HOST;
+      proxy_pass         http://$WEB_INTERNAL_HOST:80;
       proxy_http_version 1.1;
-      proxy_set_header   Host              $WEB_INTERNAL_HOST;
+      proxy_set_header   Host              $host;
       proxy_set_header   X-Real-IP         $remote_addr;
       proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
       proxy_set_header   X-Forwarded-Proto $scheme;
-      proxy_redirect     off;
     }
   }
 }
