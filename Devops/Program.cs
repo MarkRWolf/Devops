@@ -159,10 +159,10 @@ app.UseAuthorization();
 
 app.MapHealthChecks("/health");
 app.MapHealthChecks("/API/health");
+app.MapHub<WorkflowHub>("/WS/workflowHub");
 app.MapControllers();
 
 // ───── SIGNALR HUB ─────────────────────────
-app.MapHub<WorkflowHub>("/WS/workflowHub");
 
 app.Run();
 
