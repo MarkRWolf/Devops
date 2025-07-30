@@ -11,27 +11,22 @@ http {
     listen 80;
     server_name _;
 
-    location = /WS/workflowHub {
-      return 308 /WS/workflowHub/;
-    }
-
-    location ^~ /WS/workflowHub/ {
-      proxy_pass         https://$API_INTERNAL_HOST;
+    # ─── SignalR WebSocket & negotiate ───────────────────────────────
+    location ^~ /WS/workflowHub {
+      proxy_pass         http://$API_INTERNAL_HOST;
       proxy_http_version 1.1;
-      proxy_ssl_server_name on;
       proxy_set_header   Upgrade           $http_upgrade;
       proxy_set_header   Connection        $connection_upgrade;
-      proxy_set_header   Host              $API_INTERNAL_HOST;
+      proxy_set_header   Host              $host;
       proxy_set_header   X-Real-IP         $remote_addr;
       proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
       proxy_set_header   X-Forwarded-Proto $scheme;
-      proxy_redirect     off;
     }
 
+    # ─── API endpoints (uppercase) ────────────────────────────────
     location ^~ /API/ {
-      proxy_pass         https://$API_INTERNAL_HOST;
+      proxy_pass         http://$API_INTERNAL_HOST;
       proxy_http_version 1.1;
-      proxy_ssl_server_name on;
       proxy_set_header   Host              $API_INTERNAL_HOST;
       proxy_set_header   X-Real-IP         $remote_addr;
       proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
@@ -39,10 +34,10 @@ http {
       proxy_redirect     off;
     }
 
+    # ─── API endpoints (lowercase) ────────────────────────────────
     location ^~ /api/ {
-    proxy_pass         https://$API_INTERNAL_HOST/API/;
+      proxy_pass         http://$API_INTERNAL_HOST/API/;
       proxy_http_version 1.1;
-      proxy_ssl_server_name on;
       proxy_set_header   Host              $API_INTERNAL_HOST;
       proxy_set_header   X-Real-IP         $remote_addr;
       proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
@@ -50,11 +45,10 @@ http {
       proxy_redirect     off;
     }
 
-
+    # ─── Everything else (front‑end web) ───────────────────────────
     location / {
-      proxy_pass         https://$WEB_INTERNAL_HOST;
+      proxy_pass         http://$WEB_INTERNAL_HOST;
       proxy_http_version 1.1;
-      proxy_ssl_server_name on;
       proxy_set_header   Host              $WEB_INTERNAL_HOST;
       proxy_set_header   X-Real-IP         $remote_addr;
       proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
