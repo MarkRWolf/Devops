@@ -21,6 +21,22 @@ jobs:
       - name: Restore
         run: dotnet restore Devops/Devops.sln
 
+      # ─── Run tests INSIDE Docker & extract .trx ──────────────────────
+      - name: Run tests and extract report
+        # build the Dockerfile up to the `report` stage and dump out artifacts/
+        run: |
+          docker build \
+            -f Devops/Dockerfile \
+            --target report \
+            -o ./artifacts \
+            .
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ github.sha }}
+          path: artifacts/test-results.trx
+
       # ─── Azure prep & login ─────────────────────────────────────────
       - name: Azure Login
         uses: azure/login@v2
@@ -43,6 +59,7 @@ jobs:
           docker build \
             -t ${{ secrets.ACR_NAME }}/${{ secrets.SERVER_IMAGE_REPO }}:${{ env.SHA }} \
             -f Devops/Dockerfile \
+            --target runtime \
             .
           docker push ${{ secrets.ACR_NAME }}/${{ secrets.SERVER_IMAGE_REPO }}:${{ env.SHA }}
           docker tag ${{ secrets.ACR_NAME }}/${{ secrets.SERVER_IMAGE_REPO }}:${{ env.SHA }} \
