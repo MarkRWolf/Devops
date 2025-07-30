@@ -1,6 +1,8 @@
 worker_processes 1;
 events { worker_connections 1024; }
 
+# works for all except WS
+
 http {
   map $http_upgrade $connection_upgrade {
     default   upgrade;

@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 export default async function LoginPage() {
   const user = await checkAuth();
   if (user) {
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await new Promise((resolve) => setTimeout(resolve, 400));
     redirect("/dashboard");
   }
 
