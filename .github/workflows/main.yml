@@ -71,6 +71,7 @@ jobs:
         run: |
           docker build \
             --build-arg NEXT_PUBLIC_SELF_URL="${{ secrets.NEXT_PUBLIC_SELF_URL }}" \
+            --build-arg DOTNET_API_BASE_URL="${{ secrets.DOTNET_API_BASE_URL }} \
             -t ${{ secrets.ACR_NAME }}/${{ secrets.CLIENT_IMAGE_REPO }}:${{ env.SHA }} \
             -f client/Dockerfile ./client
           docker push ${{ secrets.ACR_NAME }}/${{ secrets.CLIENT_IMAGE_REPO }}:${{ env.SHA }}
