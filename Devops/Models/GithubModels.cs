@@ -2,7 +2,7 @@ namespace Devops.Models;
 
 using System.Text.Json.Serialization;
 using System; 
-using System.Collections.Generic; 
+using System.Collections.Generic;
 
 public class GitHubWorkflowRunsResponse
 {
