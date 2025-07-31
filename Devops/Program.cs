@@ -67,7 +67,7 @@ svc.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
            OnAuthenticationFailed = ctx =>
            {
                var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
-               logger.LogError(ctx.Exception, "JWT authentication failed → {ExceptionType} – {ExceptionMessage}",
+               logger.LogError(ctx.Exception, "JWT authentication failed → {ExceptionType} - {ExceptionMessage}",
                    ctx.Exception.GetType().Name, ctx.Exception.Message);
                return Task.CompletedTask;
            },
