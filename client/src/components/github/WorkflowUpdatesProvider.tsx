@@ -5,18 +5,13 @@ import { HubConnectionState } from "@microsoft/signalr";
 import { getWorkflowHub } from "@/lib/signalr";
 import { GitHubWorkflowRun } from "@/lib/github/models";
 
-type UpdatesContext = { lastRun: GitHubWorkflowRun | null };
+// Context provides runs that are socketed after initial render
+type UpdatesContext = { socketedRuns: GitHubWorkflowRun[] };
 
 const WorkflowUpdatesContext = createContext<UpdatesContext | undefined>(undefined);
 
-export function WorkflowUpdatesProvider({
-  children,
-  initialRun,
-}: {
-  children: ReactNode;
-  initialRun?: GitHubWorkflowRun;
-}) {
-  const [lastRun, setLastRun] = useState<GitHubWorkflowRun | null>(initialRun ?? null);
+export function WorkflowUpdatesProvider({ children }: { children: ReactNode }) {
+  const [socketedRuns, setSocketedRuns] = useState<GitHubWorkflowRun[]>([]);
 
   useEffect(() => {
     const hub = getWorkflowHub();
@@ -25,7 +20,20 @@ export function WorkflowUpdatesProvider({
       hub.start().catch(console.error);
     }
 
-    const onReceive = (run: GitHubWorkflowRun) => setLastRun(run);
+    const onReceive = (newRunUpdate: GitHubWorkflowRun) => {
+      setSocketedRuns((prevSocketedRuns) => {
+        const existingIndex = prevSocketedRuns.findIndex((run) => run.id === newRunUpdate.id);
+
+        if (existingIndex !== -1) {
+          const updatedList = [...prevSocketedRuns];
+          updatedList[existingIndex] = newRunUpdate;
+          return updatedList;
+        } else {
+          return [newRunUpdate, ...prevSocketedRuns];
+        }
+      });
+    };
+
     hub.on("ReceiveWorkflowRun", onReceive);
 
     return () => {
@@ -37,7 +45,7 @@ export function WorkflowUpdatesProvider({
   }, []);
 
   return (
-    <WorkflowUpdatesContext.Provider value={{ lastRun }}>
+    <WorkflowUpdatesContext.Provider value={{ socketedRuns }}>
       {children}
     </WorkflowUpdatesContext.Provider>
   );

@@ -15,7 +15,7 @@ export default async function DashboardHome() {
   return (
     <div>
       <Charts workflowRuns={workflowRuns} />
-      <WorkflowUpdatesProvider initialRun={workflowRuns[0]}>
+      <WorkflowUpdatesProvider>
         <WorkflowRuns runs={workflowRuns} project="/project" />
       </WorkflowUpdatesProvider>
     </div>

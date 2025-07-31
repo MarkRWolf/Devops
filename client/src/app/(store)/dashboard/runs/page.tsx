@@ -9,7 +9,7 @@ export default async function DashboardStats() {
   const workflowRuns = await fetchWorkflowRuns();
 
   return (
-    <WorkflowUpdatesProvider initialRun={workflowRuns[0]}>
+    <WorkflowUpdatesProvider>
       <WorkflowRuns runs={workflowRuns} project="/project" />
     </WorkflowUpdatesProvider>
   );

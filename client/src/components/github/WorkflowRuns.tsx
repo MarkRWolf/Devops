@@ -10,8 +10,8 @@ interface WorkflowRunsProps {
 }
 
 const WorkflowRuns = ({ runs, project = "" }: WorkflowRunsProps) => {
-  const { lastRun } = useWorkflowUpdates();
-  const merged = lastRun && lastRun.id !== runs[0]?.id ? [lastRun, ...runs] : runs;
+  const { socketedRuns } = useWorkflowUpdates();
+  const merged = socketedRuns.length ? [...socketedRuns, ...runs] : runs;
   console.log("baseUrl", baseUrl);
 
   return (

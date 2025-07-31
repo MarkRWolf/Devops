@@ -13,7 +13,7 @@ export default async function DashboardStats() {
     <div>
       <div>
         <Charts workflowRuns={workflowRuns} />
-        <WorkflowUpdatesProvider initialRun={workflowRuns[0]}>
+        <WorkflowUpdatesProvider>
           <WorkflowRuns runs={workflowRuns} project="/project" />
         </WorkflowUpdatesProvider>
       </div>
