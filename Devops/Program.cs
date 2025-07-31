@@ -95,17 +95,16 @@ svc.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // ───── CORS ─────────────────────────────────
 svc.AddCors(options =>
 {
-    options.AddPolicy(name: "Local", // Changed policy name to "Local" for consistency
+    options.AddPolicy(name: "Local", 
         builder => builder
-            .WithOrigins("http://localhost:3000")
+            .WithOrigins("http://localhost:3000", "http://localhost:80")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials());
 
-    // ADDED Production CORS Policy
     options.AddPolicy(name: "Production",
         builder => builder
-            .WithOrigins("https://webhookrelay.thankfulglacier-8f9db822.northeurope.azurecontainerapps.io")
+            .WithOrigins("https://webhookrelay.thankfulglacier-8f9db822.northeurope.azurecontainerapps.io", "https://devops.mark-wolf.com")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials());
