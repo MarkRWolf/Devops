@@ -8,7 +8,7 @@ import Link from "next/link";
 const Header = () => {
   const segments = useSelectedLayoutSegments();
   const pathname = segments[0] ? `/${segments[0]}` : "/";
-  const links = ["/dashboard"] as const;
+  const links = [["dashboard", "/login"]] as const;
   const router = useRouter();
 
   return (
@@ -27,18 +27,21 @@ const Header = () => {
 
         {/* right column: nav + toggler */}
         <div className="flex justify-end items-center gap-4 text-lg">
-          {links.map((link) => (
-            <Link
-              key={link}
-              href={link}
-              onMouseOver={() => router.prefetch(link)}
-              className={`capitalize hover:-translate-y-0.5 transition-transform duration-200 ${
-                pathname === link ? "text-foreground" : "text-muted-foreground"
-              }`}
-            >
-              {link.slice(1)}
-            </Link>
-          ))}
+          {links.map((link) => {
+            const [name, href] = link;
+            return (
+              <Link
+                key={name}
+                href={href}
+                onMouseOver={() => router.prefetch(href)}
+                className={`capitalize hover:-translate-y-0.5 transition-transform duration-200 ${
+                  pathname === href ? "text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {link.slice(1)}
+              </Link>
+            );
+          })}
           <ThemeToggler />
         </div>
       </div>
