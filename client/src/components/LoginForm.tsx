@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ZodError } from "zod";
 import { signupSchema, loginSchema } from "@/lib/user/userSchema";
 import { Button } from "./ui/button";
-import { baseUrl } from "@/lib/settings";
+import { clientBaseUrl } from "@/lib/settings";
 
 /* ─── minimal types ───────────────────────────────── */
 
@@ -48,10 +48,10 @@ export default function LoginForm() {
       return;
     }
 
-    const url = mode === "login" ? "/api/account/login" : "/api/account/signup";
+    const url = mode === "login" ? "/account/login" : "/account/signup";
 
     try {
-      const res = await fetch(`${baseUrl}${url}`, {
+      const res = await fetch(`${clientBaseUrl}${url}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

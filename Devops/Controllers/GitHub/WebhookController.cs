@@ -1,73 +1,138 @@
+// Controllers/GitHub/WebhookController.cs
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
+using Devops.Data;
+using Devops.Hubs;
+using Devops.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
-using Devops.Hubs;
-
-[ApiController]
-[Route("API/github/webhook")]
-[AllowAnonymous]
-public class WebhookController : ControllerBase
+namespace Devops.Controllers.GitHub
 {
-    private readonly IHubContext<WorkflowHub> _hub;
-    private readonly ILogger<WebhookController> _logger;
-    private readonly byte[] _secretBytes;
-
-    public WebhookController(
-        IHubContext<WorkflowHub> hub,
-        IConfiguration config,
-        ILogger<WebhookController> logger)
+    [ApiController]
+    [Route("API/github/webhook")]
+    [AllowAnonymous]
+    public class WebhookController : ControllerBase
     {
-        _hub = hub;
-        _logger = logger;
-        var secret = config["GitHub:WebhookSecret"] 
-                     ?? throw new ArgumentNullException("GitHub:WebhookSecret");
-        _secretBytes = Encoding.UTF8.GetBytes(secret);
-    }
+        private readonly IHubContext<WorkflowHub> _hub;
+        private readonly ILogger<WebhookController> _logger;
+        private readonly DevopsDb _db;
+        private readonly IPatService _patService;
+        private readonly byte[] _projectSecretBytes;
+        private readonly string? _projectOwnerRepo;
 
-    [HttpPost]
-    public async Task<IActionResult> Receive(
-        [FromHeader(Name = "X-Hub-Signature-256")] string signature)
-    {
-        using var reader = new StreamReader(Request.Body, Encoding.UTF8, leaveOpen: true);
-        var rawBody = await reader.ReadToEndAsync();
-        Request.Body.Position = 0;
-
-        if (!VerifySignature(signature, rawBody))
+        public WebhookController(
+            IHubContext<WorkflowHub> hub,
+            IConfiguration cfg,
+            ILogger<WebhookController> logger,
+            DevopsDb db,
+            IPatService patService)
         {
-            _logger.LogWarning("GitHub webhook signature mismatch.");
-            return Unauthorized();
+            _hub = hub;
+            _logger = logger;
+            _db = db;
+            _patService = patService;
+
+            _projectOwnerRepo = cfg["GitHub:ProjectOwnerRepo"];
+            var projSecret = cfg["GitHub:WebhookSecret"] ?? throw new ArgumentNullException("GitHub:WebhookSecret");
+            _projectSecretBytes = Encoding.UTF8.GetBytes(projSecret);
         }
 
-        using var doc = JsonDocument.Parse(rawBody);
-        var payload = doc.RootElement;
-
-        if (payload.TryGetProperty("workflow_run", out var run))
+        [HttpPost]
+        public async Task<IActionResult> Receive(
+            [FromHeader(Name = "X-Hub-Signature-256")] string signature)
         {
-            await _hub.Clients.All.SendAsync("ReceiveWorkflowRun", run);
-            _logger.LogInformation("Broadcasted workflow_run event to clients.");
+            string body;
+            using (var reader = new StreamReader(Request.Body, Encoding.UTF8, leaveOpen: true))
+            {
+                body = await reader.ReadToEndAsync();
+                Request.Body.Position = 0;
+            }
+
+            using var doc = JsonDocument.Parse(body);
+            var root = doc.RootElement;
+
+            if (!root.TryGetProperty("workflow_run", out var run))
+            {
+                _logger.LogInformation("Webhook payload missing workflow_run - ignored.");
+                return Ok();
+            }
+
+            // repo full name
+            string? repoFull = root.GetProperty("repository").GetProperty("full_name").GetString();
+
+            if (string.IsNullOrWhiteSpace(repoFull))
+            {
+                _logger.LogWarning("repository.full_name missing in webhook payload.");
+                return Ok();
+            }
+
+            /* ─── public project (homepage broadcasts my stats to client.all) ─── */
+            if (string.Equals(repoFull, _projectOwnerRepo, StringComparison.OrdinalIgnoreCase))
+            {
+                if (!Verify(signature, body, _projectSecretBytes))
+                {
+                    _logger.LogWarning("Signature mismatch for public webhook.");
+                    return Unauthorized();
+                }
+
+                await _hub.Clients.All.SendAsync("ReceiveWorkflowRun", run);
+                _logger.LogInformation("Public workflow_run broadcasted to ALL for {Repo}.", repoFull);
+                return Ok();
+            }
+
+            /* ─── user-specific repo (SHOULD NEVER BROADCAST TO CLIENTS.ALL!!) ─── */
+            var users = await _db.Users
+                .AsNoTracking()
+                .Where(u => u.HasGitHubConfig && u.GitHubOwnerRepo == repoFull)
+                .Select(u => u.Id)
+                .ToListAsync();
+
+            if (users.Count == 0)
+            {
+                _logger.LogInformation("No subscribers for repo {Repo}.", repoFull);
+                return Ok();
+            }
+
+            var delivered = 0;
+            foreach (var userId in users)
+            {
+                var secret = await _patService.GetDecryptedGitHubWebhookSecretAsync(userId);
+                if (string.IsNullOrWhiteSpace(secret)) continue;
+
+                var secretBytes = Encoding.UTF8.GetBytes(secret);
+                if (!Verify(signature, body, secretBytes)) continue;
+
+                await _hub.Clients.Group($"user-{userId}")
+                    .SendAsync("ReceiveWorkflowRun", run);
+                delivered++;
+            }
+
+            _logger.LogInformation("Webhook for {Repo} delivered to {Count} user(s).", repoFull, delivered);
+            return Ok();
         }
-        else
+
+        /* ───────── helpers ───────── */
+
+        private static bool Verify(string signedHeader, string payload, byte[] secret)
         {
-            _logger.LogInformation("Received GitHub webhook without workflow_run.");
+            if (string.IsNullOrWhiteSpace(signedHeader) ||
+                !signedHeader.StartsWith("sha256=", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            var sig = signedHeader["sha256=".Length..];
+            using var hmac = new HMACSHA256(secret);
+            var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(payload));
+            var computed = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+            return computed == sig;
         }
-
-        return Ok();
-    }
-
-    private bool VerifySignature(string signatureWithPrefix, string payload)
-    {
-        if (string.IsNullOrWhiteSpace(signatureWithPrefix) ||
-            !signatureWithPrefix.StartsWith("sha256=", StringComparison.OrdinalIgnoreCase))
-            return false;
-
-        var signature = signatureWithPrefix["sha256=".Length..];
-        using var hmac = new HMACSHA256(_secretBytes);
-        var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(payload));
-        var computed = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
-        return computed == signature;
     }
 }

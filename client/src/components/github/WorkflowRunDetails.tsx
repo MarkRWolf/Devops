@@ -3,7 +3,7 @@
 import React, { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { GitHubWorkflowRun, GitHubJob, GitHubArtifact } from "@/lib/github/models";
-import { baseUrl } from "@/lib/settings";
+import { clientBaseUrl } from "@/lib/settings";
 
 interface WorkflowRunDetailsProps {
   run: GitHubWorkflowRun;
@@ -22,7 +22,7 @@ export default function WorkflowRunDetails({ run, urlInsert }: WorkflowRunDetail
     setError(null);
 
     try {
-      const base = `${baseUrl}/api/github${urlInsert}/workflows/runs/${run.id}`;
+      const base = `${clientBaseUrl}/github${urlInsert}/workflows/runs/${run.id}`;
       const [jobsRes, artifactsRes] = await Promise.all([
         fetch(`${base}/jobs`),
         fetch(`${base}/artifacts`),
@@ -168,7 +168,7 @@ export default function WorkflowRunDetails({ run, urlInsert }: WorkflowRunDetail
                             onClick={(e) => {
                               e.stopPropagation();
                               download(
-                                `${baseUrl}/api/github${urlInsert}/workflows/artifacts/${artifact.id}/zip`
+                                `${clientBaseUrl}/github${urlInsert}/workflows/artifacts/${artifact.id}/zip`
                               );
                             }}
                           >
@@ -186,7 +186,7 @@ export default function WorkflowRunDetails({ run, urlInsert }: WorkflowRunDetail
                   <Button
                     onClick={(e) => {
                       e.stopPropagation();
-                      download(`${baseUrl}/api/github${urlInsert}/workflows/runs/${run.id}/logs`);
+                      download(`${clientBaseUrl}/github${urlInsert}/workflows/runs/${run.id}/logs`);
                     }}
                   >
                     Download All Logs
