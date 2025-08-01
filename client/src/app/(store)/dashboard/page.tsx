@@ -9,7 +9,7 @@ import { WorkflowUpdatesProvider } from "@/components/github/WorkflowUpdatesProv
 
 export default async function DashboardHome() {
   const user = await checkAuth();
-  if (!user) redirect("/login");
+  if (!user) redirect("/");
   const workflowRuns = await fetchWorkflowRuns();
 
   return (
