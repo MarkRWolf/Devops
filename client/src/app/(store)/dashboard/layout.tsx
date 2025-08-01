@@ -10,7 +10,7 @@ export default function RootLayout({ children }: LayoutProps) {
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <PageTransition>
         <DashboardNav />
-        <main className="pl-[256px] w-full min-h-screen [view-transition-name:layout]">
+        <main className="pl-[256px] pt-header w-full min-h-screen [view-transition-name:layout]">
           {children}
         </main>
       </PageTransition>

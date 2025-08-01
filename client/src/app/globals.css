@@ -92,6 +92,9 @@
   .h-header {
     @apply h-[var(--header-height)];
   }
+  .pt-header {
+    @apply pt-[var(--header-height)];
+  }
 }
 
 :root {
