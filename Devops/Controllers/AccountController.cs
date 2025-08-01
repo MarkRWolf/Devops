@@ -24,29 +24,37 @@ public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEn
     };
 
     [HttpPost("signup")]
-        public async Task<IActionResult> Register([FromBody] SignupReq r)
-        {
-            var res = await auth.RegisterAsync(r.Email, r.Password, r.Username);
-            if (!res.Success || res.User is null)
-                return Conflict(new { errors = res.Errors });  
-
-            Response.Cookies.Append("DevopsUserToken", res.Token!, CookieOpts);
-            return StatusCode(201, new { res.User, Message = "User registered successfully." });
-        }
-
-
-[HttpPost("logout")]
-public IActionResult Logout()
-{
-    Response.Cookies.Delete("DevopsUserToken", new CookieOptions
+    public async Task<IActionResult> Register([FromBody] SignupReq r)
     {
-        Path = "/",
-        Secure = true,
-        SameSite = SameSiteMode.None
-    });
+        var res = await auth.RegisterAsync(r.Email, r.Password, r.Username);
+        if (!res.Success || res.User is null)
+            return Conflict(new { errors = res.Errors });  
+        Response.Cookies.Append("DevopsUserToken", res.Token!, CookieOpts);
+        return StatusCode(201, new { res.User, Message = "User registered successfully." });
+    }
 
-    return Ok(new { Message = "Logged out successfully." });
-}
+
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] Req r)
+    {
+        var res = await auth.LoginAsync(r.Email, r.Password);
+        if (res is null || res.User is null) return Unauthorized(new { errors = new[] { "Invalid credentials." } });
+        Response.Cookies.Append("DevopsUserToken", res.Token!, CookieOpts);
+        return Ok(new { res.User, Message = "Login successful." });
+    }
+
+    [HttpPost("logout")]
+    public IActionResult Logout()
+    {
+        Response.Cookies.Delete("DevopsUserToken", new CookieOptions
+        {
+            Path = "/",
+            Secure = true,
+            SameSite = SameSiteMode.None
+        });
+
+        return Ok(new { Message = "Logged out successfully." });
+    }
 
 
     [Authorize]
