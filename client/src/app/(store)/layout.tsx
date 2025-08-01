@@ -13,9 +13,7 @@ export default function RootLayout({ children }: LayoutProps) {
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Header />
           <PageTransition>
-            <main className="min-h-screen pt-[var(--header-height)] [view-transition-name:page]">
-              {children}
-            </main>
+            <main className="min-h-screen pt-[var(--header-height)]">{children}</main>
           </PageTransition>
         </ThemeProvider>
       </body>
