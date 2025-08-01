@@ -35,14 +35,19 @@ public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEn
         }
 
 
-    [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] Req r)
+[HttpPost("logout")]
+public IActionResult Logout()
+{
+    Response.Cookies.Delete("DevopsUserToken", new CookieOptions
     {
-        var res = await auth.LoginAsync(r.Email, r.Password);
-        if (res is null || res.User is null) return Unauthorized(new { errors = new[] { "Invalid credentials." } });
-        Response.Cookies.Append("DevopsUserToken", res.Token!, CookieOpts);
-        return Ok(new { res.User, Message = "Login successful." });
-    }
+        Path = "/",
+        Secure = true,
+        SameSite = SameSiteMode.None
+    });
+
+    return Ok(new { Message = "Logged out successfully." });
+}
+
 
     [Authorize]
     [HttpGet("me")]
