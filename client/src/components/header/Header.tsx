@@ -38,7 +38,7 @@ const Header = () => {
                   pathname === href ? "text-foreground" : "text-muted-foreground"
                 }`}
               >
-                {link.slice(1)}
+                {name}
               </Link>
             );
           })}
