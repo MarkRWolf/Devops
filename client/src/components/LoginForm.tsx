@@ -48,10 +48,10 @@ export default function LoginForm() {
       return;
     }
 
-    const url = mode === "login" ? "/account/login" : "/account/signup";
+    const url = mode === "login" ? "api/account/login" : "api/account/signup";
 
     try {
-      const res = await fetch(`${clientBaseUrl}${url}`, {
+      const res = await fetch(`${url}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
