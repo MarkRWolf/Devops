@@ -168,7 +168,7 @@ export default function WorkflowRunDetails({ run, urlInsert }: WorkflowRunDetail
                             onClick={(e) => {
                               e.stopPropagation();
                               download(
-                                `${clientBaseUrl}/api/github${urlInsert}/workflows/artifacts/${artifact.id}/zip`
+                                `${clientBaseUrl}/github${urlInsert}/workflows/artifacts/${artifact.id}/zip`
                               );
                             }}
                           >
@@ -186,9 +186,7 @@ export default function WorkflowRunDetails({ run, urlInsert }: WorkflowRunDetail
                   <Button
                     onClick={(e) => {
                       e.stopPropagation();
-                      download(
-                        `${clientBaseUrl}/api/github${urlInsert}/workflows/runs/${run.id}/logs`
-                      );
+                      download(`${clientBaseUrl}/github${urlInsert}/workflows/runs/${run.id}/logs`);
                     }}
                   >
                     Download All Logs

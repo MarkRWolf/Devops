@@ -7,8 +7,8 @@ using Microsoft.AspNetCore.SignalR;
 namespace Devops.Hubs
 {
     /// <summary>
-    /// Routes each connection into a per-user group (<c>user-{Guid}</c>)
-    /// so broadcasts can be targeted to the correct account.
+    /// Places each authenticated connection into a personal group (<c>user-{Guid}</c>)
+    /// for targeted webhook broadcasts.
     /// </summary>
     public class WorkflowHub : Hub
     {
@@ -16,9 +16,7 @@ namespace Devops.Hubs
         {
             var userIdClaim = Context.User?.FindFirstValue("id");
             if (Guid.TryParse(userIdClaim, out var userId))
-            {
                 await Groups.AddToGroupAsync(Context.ConnectionId, $"user-{userId}");
-            }
 
             await base.OnConnectedAsync();
         }
@@ -27,9 +25,7 @@ namespace Devops.Hubs
         {
             var userIdClaim = Context.User?.FindFirstValue("id");
             if (Guid.TryParse(userIdClaim, out var userId))
-            {
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"user-{userId}");
-            }
 
             await base.OnDisconnectedAsync(exception);
         }

@@ -10,6 +10,7 @@ public sealed class DevopsUser : IdentityUser<Guid>
     /* GitHub stuff */
     public string? EncryptedGitHubPat { get; set; }
     public string? GitHubOwnerRepo { get; set; } 
+    public string? EncryptedGitHubWebhookSecret { get; set; }
     public bool HasGitHubConfig { get; set; }
     public string? EncryptedAzureDevOpsToken { get; set; }
 
