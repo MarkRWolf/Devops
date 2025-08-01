@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { ZodError } from "zod";
 import { signupSchema, loginSchema } from "@/lib/user/userSchema";
 import { Button } from "./ui/button";
-import { clientBaseUrl } from "@/lib/settings";
 
 /* ─── minimal types ───────────────────────────────── */
 
