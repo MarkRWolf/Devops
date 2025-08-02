@@ -37,7 +37,7 @@ const ProfileClient = (props: { user: User }) => {
         credentials: "include",
         cache: "no-store",
       });
-      router.push("/login");
+      router.push("/");
     } catch {
       setErr("Logout failed. Likely a network error.");
     }

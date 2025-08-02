@@ -10,7 +10,7 @@ export default async function DashboardStats() {
 
   return (
     <WorkflowUpdatesProvider>
-      <WorkflowRuns runs={workflowRuns} project="/project" />
+      <WorkflowRuns runs={workflowRuns} />
     </WorkflowUpdatesProvider>
   );
 }

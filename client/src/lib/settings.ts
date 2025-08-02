@@ -8,5 +8,5 @@ export const selfUrl =
 
 export const proxyUrl = process.env.NEXT_PUBLIC_NGINX_URL || null;
 
-export const clientBaseUrl = proxyUrl ? proxyUrl + "/API" : selfUrl + "/api";
+export const clientBaseUrl = proxyUrl ? proxyUrl + "/api" : selfUrl + "/api";
 export const baseUrl = selfUrl;
