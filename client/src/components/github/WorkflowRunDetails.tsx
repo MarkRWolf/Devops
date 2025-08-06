@@ -22,7 +22,7 @@ export default function WorkflowRunDetails({ run, urlInsert }: WorkflowRunDetail
     setError(null);
 
     try {
-      const base = `${clientBaseUrl}/github${urlInsert}/workflows/runs/${run.id}`;
+      const base = `/api/github${urlInsert}/workflows/runs/${run.id}`;
       const [jobsRes, artifactsRes] = await Promise.all([
         fetch(`${base}/jobs`, {
           credentials: "include",
