@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { FaX } from "react-icons/fa6";
 import { RxUpdate } from "react-icons/rx";
 import { FiCopy } from "react-icons/fi";
-import { clientBaseUrl } from "@/lib/settings";
 
 const ProfileClient = (props: { user: User }) => {
   const me = props.user;
@@ -112,7 +111,7 @@ const ProfileClient = (props: { user: User }) => {
     setErr("");
     setSecretStatus("loading");
     try {
-      const res = await fetch(`${clientBaseUrl}/pat/github/webhook-secret/refresh`, {
+      const res = await fetch(`/api/pat/github/webhook-secret/refresh`, {
         method: "POST",
         credentials: "include",
         cache: "no-store",

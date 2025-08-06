@@ -3,7 +3,6 @@
 import React, { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { GitHubWorkflowRun, GitHubJob, GitHubArtifact } from "@/lib/github/models";
-import { clientBaseUrl } from "@/lib/settings";
 
 interface WorkflowRunDetailsProps {
   run: GitHubWorkflowRun;
@@ -172,7 +171,7 @@ export default function WorkflowRunDetails({ run, urlInsert }: WorkflowRunDetail
                             onClick={(e) => {
                               e.stopPropagation();
                               download(
-                                `${clientBaseUrl}/github${urlInsert}/workflows/artifacts/${artifact.id}/zip`
+                                `/api/github${urlInsert}/workflows/artifacts/${artifact.id}/zip`
                               );
                             }}
                           >
@@ -190,7 +189,7 @@ export default function WorkflowRunDetails({ run, urlInsert }: WorkflowRunDetail
                   <Button
                     onClick={(e) => {
                       e.stopPropagation();
-                      download(`${clientBaseUrl}/github${urlInsert}/workflows/runs/${run.id}/logs`);
+                      download(`/api/github${urlInsert}/workflows/runs/${run.id}/logs`);
                     }}
                   >
                     Download All Logs
