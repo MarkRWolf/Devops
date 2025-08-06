@@ -1,11 +1,7 @@
 // Controllers/GitHub/WebhookController.cs
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 using Devops.Data;
 using Devops.Hubs;
 using Devops.Services.Interfaces;
@@ -13,7 +9,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace Devops.Controllers.GitHub
 {
