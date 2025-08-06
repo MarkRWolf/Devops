@@ -24,8 +24,12 @@ export default function WorkflowRunDetails({ run, urlInsert }: WorkflowRunDetail
     try {
       const base = `${clientBaseUrl}/github${urlInsert}/workflows/runs/${run.id}`;
       const [jobsRes, artifactsRes] = await Promise.all([
-        fetch(`${base}/jobs`),
-        fetch(`${base}/artifacts`),
+        fetch(`${base}/jobs`, {
+          credentials: "include",
+        }),
+        fetch(`${base}/artifacts`, {
+          credentials: "include",
+        }),
       ]);
 
       if (!jobsRes.ok)
