@@ -1,7 +1,5 @@
 name: Build & Deploy - CLIENT -> ACA
 
-name: Build & Deploy - Frontend
-
 on:
   push:
     branches: [ghfrontend]
