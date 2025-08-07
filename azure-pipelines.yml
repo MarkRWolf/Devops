@@ -1,4 +1,4 @@
-# azure-pipelines.yml – extended to match GitHub workflow features
+# azure-pipelines.yml
 trigger:
   - azmaster
 
@@ -30,17 +30,15 @@ variables:
   vmImageName: "ubuntu-latest"
 
 stages:
-  # ─────────────────────────────────────────────────────────────────────────────
-  # BUILD STAGE
-  # ─────────────────────────────────────────────────────────────────────────────
+  # ──────────── BUILD ────────────────────
   - stage: Build
-    displayName: Build, test, push images
+    displayName: Build, test, push
+    variables:
+      - group: devops-secrets
     jobs:
-      # -------------------------------------------------------------------------
-      # 1) Run unit tests inside the Docker “report” stage (same trick as GH-CI)
-      # -------------------------------------------------------------------------
+      # 1) run tests
       - job: Run_Unit_Tests
-        displayName: Run tests & collect .trx
+        displayName: Tests
         pool: { vmImage: $(vmImageName) }
         steps:
           - script: |
@@ -49,27 +47,25 @@ stages:
                 --target report \
                 -o $(Build.ArtifactStagingDirectory)/tests \
                 $(serverBuildContext)
-            displayName: Build report stage (+ run tests)
+            displayName: Build 'report' stage + run tests
 
           - task: PublishTestResults@2
-            displayName: Publish .trx to pipeline
             inputs:
               testResultsFiles: "$(Build.ArtifactStagingDirectory)/tests/**/*.trx"
               testRunTitle: "Unit Tests $(Build.BuildId)"
               failTaskOnFailedTests: true
 
           - task: PublishBuildArtifacts@1
-            displayName: Upload raw .trx artefact
             inputs:
               artifactName: "test-results-$(Build.BuildId)"
               pathToPublish: "$(Build.ArtifactStagingDirectory)/tests"
 
-      # -------------------------------------------------------------------------
-      # 2) Build & push runtime / client images
-      # -------------------------------------------------------------------------
+      # 2) build + push runtime & client images
       - job: Build_And_Push
         dependsOn: Run_Unit_Tests
         pool: { vmImage: $(vmImageName) }
+        variables:
+          - group: vars
         steps:
           # ---------- SERVER ----------
           - task: Docker@2
@@ -83,7 +79,8 @@ stages:
               tags: |
                 $(tag)
                 latest
-              arguments: "--target runtime"
+              arguments: |
+                --target runtime
 
           # ---------- CLIENT ----------
           - task: Docker@2
@@ -98,27 +95,25 @@ stages:
                 $(tag)
                 latest
               buildArguments: |
-                NEXT_PUBLIC_SELF_URL=$(NEXT_PUBLIC_SELF_URL)
-                DOTNET_API_BASE_URL=$(DOTNET_API_BASE_URL)
+                --build-arg NEXT_PUBLIC_SELF_URL=$(NEXT_PUBLIC_SELF_URL)
+                --build-arg DOTNET_API_BASE_URL=$(DOTNET_API_BASE_URL)
 
-          # ---------- run-info.txt (mirrors GH Action) ----------
+          # ---------- run-info ----------
           - script: |
-              echo "Build ID: $(Build.BuildId)"          >  run-info.txt
-              echo "Source Version: $(Build.SourceVersion)" >> run-info.txt
-              echo "Tag: $(tag)"                           >> run-info.txt
-            displayName: Write run info
+              echo "Build ID: $(Build.BuildId)"            >  run-info.txt
+              echo "Commit:   $(Build.SourceVersion)"      >> run-info.txt
+              echo "Tag:      $(tag)"                      >> run-info.txt
+            displayName: Write run-info.txt
 
           - task: PublishBuildArtifacts@1
-            displayName: Upload run-info.txt
             inputs:
               artifactName: "run-info-$(Build.BuildId)"
               pathToPublish: "run-info.txt"
 
-  # ─────────────────────────────────────────────────────────────────────────────
-  # DEPLOY STAGE
-  # ─────────────────────────────────────────────────────────────────────────────
+  # ──────────── DEPLOY ───────────────────
+
   - stage: Deploy
-    displayName: Roll revisions in Container Apps
+    displayName: Roll Container-App revisions
     dependsOn: Build
     jobs:
       - job: RollRevisions
