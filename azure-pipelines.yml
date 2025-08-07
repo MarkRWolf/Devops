@@ -84,9 +84,9 @@ stages:
 
           # ---------- CLIENT ----------
           - task: Docker@2
-            displayName: Build & push client
+            displayName: Build client image
             inputs:
-              command: buildAndPush
+              command: build
               repository: $(clientImageRepository)
               dockerfile: $(clientDockerfilePath)
               buildContext: $(clientBuildContext)
@@ -94,9 +94,19 @@ stages:
               tags: |
                 $(tag)
                 latest
-              arguments: |
-                --build-arg NEXT_PUBLIC_SELF_URL=$(NEXT_PUBLIC_SELF_URL)
-                --build-arg DOTNET_API_BASE_URL=$(DOTNET_API_BASE_URL)
+              buildArguments: |
+                NEXT_PUBLIC_SELF_URL=$(NEXT_PUBLIC_SELF_URL)
+                DOTNET_API_BASE_URL=$(DOTNET_API_BASE_URL)
+
+          - task: Docker@2
+            displayName: Push client image
+            inputs:
+              command: push
+              repository: $(clientImageRepository)
+              containerRegistry: $(dockerRegistryServiceConnection)
+              tags: |
+                $(tag)
+                latest
 
           # ---------- run-info ----------
           - script: |
