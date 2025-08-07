@@ -10,8 +10,13 @@ interface WorkflowRunsProps {
 
 const WorkflowRuns = ({ runs, project = "" }: WorkflowRunsProps) => {
   const { socketedRuns } = useWorkflowUpdates();
-  const merged = socketedRuns.length ? [...socketedRuns, ...runs] : runs;
+  const idSet = new Set(runs.map((r) => r.id));
+  const hubMap = new Map(socketedRuns.map((r) => [r.id, r]));
 
+  const merged = [
+    ...runs.map((r) => hubMap.get(r.id) ?? r),
+    ...socketedRuns.filter((r) => !idSet.has(r.id)),
+  ];
   return (
     <div className="container-main py-6">
       <h2 className="text-2xl font-semibold mb-8 text-center">Workflow Runs</h2>
