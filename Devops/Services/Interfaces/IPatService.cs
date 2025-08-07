@@ -1,20 +1,24 @@
-// Devops/Services/Interfaces/IPatService.cs
 namespace Devops.Services.Interfaces;
 
 public interface IPatService
 {
-    /* Store PAT */
-    Task<(bool Success, string? Error)> StoreGitHubPatAsync(Guid userId, string pat, string ownerRepo);
-    /* Decrypt PAT */
-    Task<string?> GetDecryptedGitHubPatAsync(Guid userId);
-    /* Validate - is Pat valid */
-    Task<bool> IsGitHubPatValidAsync(string pat);
-    /* Validate - is Owner/Repo valid */
-    Task<bool> IsOwnerRepoValidAsync(string pat, string ownerRepo);
-    /* Get GitHub credentials */
-    Task<(string? DecryptedPat, string? OwnerRepo)> GetGitHubCredentialsAsync(Guid userId);
+    /* ───── GitHub ───── */
+    Task<(bool Success, string? Error)> StoreGitHubPatAsync(Guid uid, string pat, string ownerRepo);
+    Task<string?> GetDecryptedGitHubPatAsync(Guid uid);
+    Task<(string? Pat, string? OwnerRepo)> GetGitHubCredentialsAsync(Guid uid);
+    Task<string>  RefreshGitHubWebhookSecretAsync(Guid uid);
+    Task<string?> GetDecryptedGitHubWebhookSecretAsync(Guid uid);
 
-    /* Webhook secret */
-    Task<string> RefreshGitHubWebhookSecretAsync(Guid userId);
-    Task<string?> GetDecryptedGitHubWebhookSecretAsync(Guid userId);
+    /* — validation helpers kept public so nothing breaks — */
+    Task<bool> IsGitHubPatValidAsync(string pat);
+    Task<bool> IsOwnerRepoValidAsync(string pat, string ownerRepo);
+
+    /* ───── Azure DevOps ───── */
+    Task<(bool Success, string? Error)> StoreAzurePatAsync(Guid uid, string pat, string org, string project);
+    Task<string?> GetDecryptedAzurePatAsync(Guid uid);
+    Task<(string? Pat, string? Org, string? Project)> GetAzureCredentialsAsync(Guid uid);
+
+    /* — Azure validation helpers — */
+    Task<bool> IsAzurePatValidAsync(string pat, string org);
+    Task<bool> IsProjectAccessibleAsync(string pat, string org, string project);
 }

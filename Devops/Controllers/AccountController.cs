@@ -18,8 +18,8 @@ public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEn
     private CookieOptions CookieOpts => new()
     {
         HttpOnly = true,
-        SameSite = SameSiteMode.None,
-        Secure = true,
+        SameSite = !_isDev ? SameSiteMode.Lax : SameSiteMode.None,
+        Secure = !_isDev,
         Expires = DateTime.UtcNow.AddDays(30)
     };
 

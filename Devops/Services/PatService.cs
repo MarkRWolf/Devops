@@ -1,11 +1,5 @@
-// Services/PatService.cs
 namespace Devops.Services;
 
-using Devops.Data;
-using Devops.Services.Interfaces;
-using Microsoft.AspNetCore.DataProtection;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
 using System.Net.Http;
@@ -14,115 +8,145 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Devops.Data;
+using Devops.Services.Interfaces;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 public sealed class PatService : IPatService
 {
     private readonly DevopsDb _db;
-    private readonly IDataProtectionProvider _dpProvider;
-    private readonly IHttpClientFactory _httpClientFactory;
-    private readonly ILogger<PatService> _logger;
+    private readonly IDataProtectionProvider _dp;
+    private readonly IHttpClientFactory _http;
+    private readonly ILogger<PatService> _log;
 
-    public PatService(DevopsDb db, IDataProtectionProvider dpProvider, IHttpClientFactory httpClientFactory, ILogger<PatService> logger)
-        => (_db, _dpProvider, _httpClientFactory, _logger) = (db, dpProvider, httpClientFactory, logger);
+    public PatService(DevopsDb db, IDataProtectionProvider dp, IHttpClientFactory http, ILogger<PatService> log)
+        => (_db, _dp, _http, _log) = (db, dp, http, log);
 
-    /* ───────── protectors ───────── */
+    IDataProtector GitProt  => _dp.CreateProtector("GitHubPat");
+    IDataProtector HookProt => _dp.CreateProtector("GitHubHook");
+    IDataProtector AzProt   => _dp.CreateProtector("AzurePat");
 
-    private IDataProtector GetPatProtector() => _dpProvider.CreateProtector("GitHubPatProtection");
-    private IDataProtector GetHookProtector() => _dpProvider.CreateProtector("GitHubWebhookSecretProtection");
+    /* ───── GitHub ───── */
 
-    /* ───────── PAT CRUD ───────── */
-
-    public async Task<(bool Success, string? Error)> StoreGitHubPatAsync(Guid userId, string pat, string ownerRepo)
+    public async Task<(bool, string?)> StoreGitHubPatAsync(Guid uid, string pat, string ownerRepo)
     {
-        if (!await IsGitHubPatValidAsync(pat)) return (false, "Invalid GitHub PAT.");
-        if (!await IsOwnerRepoValidAsync(pat, ownerRepo)) return (false, "PAT lacks access to repository.");
+        if (!await IsGitHubPatValidAsync(pat))                 return (false, "Invalid GitHub PAT.");
+        if (!await IsOwnerRepoValidAsync(pat, ownerRepo))      return (false, "PAT lacks access to repository.");
 
-        var encPat = GetPatProtector().Protect(pat);
-        var user = await _db.Users.FindAsync(userId);
-        if (user == null) return (false, "User not found.");
-
-        user.EncryptedGitHubPat = encPat;
-        user.GitHubOwnerRepo = ownerRepo;
-        user.HasGitHubConfig = true;
+        var u = await _db.Users.FindAsync(uid) ?? throw new InvalidOperationException("User not found.");
+        u.EncryptedGitHubPat = GitProt.Protect(pat);
+        u.GitHubOwnerRepo    = ownerRepo;
+        u.HasGitHubConfig    = true;
         await _db.SaveChangesAsync();
         return (true, null);
     }
 
-    public async Task<string?> GetDecryptedGitHubPatAsync(Guid userId)
+    public async Task<string?> GetDecryptedGitHubPatAsync(Guid uid)
+        => (await _db.Users.AsNoTracking()
+                 .Where(x => x.Id == uid)
+                 .Select(x => x.EncryptedGitHubPat)
+                 .FirstOrDefaultAsync()) is string enc
+            ? GitProt.Unprotect(enc)
+            : null;
+
+    public async Task<(string?, string?)> GetGitHubCredentialsAsync(Guid uid)
     {
-        var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
-        return user?.EncryptedGitHubPat is null ? null : GetPatProtector().Unprotect(user.EncryptedGitHubPat);
+        var u = await _db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Id == uid);
+        return u is null
+            ? (null, null)
+            : (u.EncryptedGitHubPat is null ? null : GitProt.Unprotect(u.EncryptedGitHubPat),
+               u.GitHubOwnerRepo);
     }
 
-    public async Task<(string? DecryptedPat, string? OwnerRepo)> GetGitHubCredentialsAsync(Guid userId)
+    public async Task<string> RefreshGitHubWebhookSecretAsync(Guid uid)
     {
-        var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
-        if (user == null) return (null, null);
-        var pat = user.EncryptedGitHubPat is null ? null : GetPatProtector().Unprotect(user.EncryptedGitHubPat);
-        return (pat, user.GitHubOwnerRepo);
-    }
-
-    /* ───────── NEW: webhook secret CRUD ───────── */
-
-    public async Task<string> RefreshGitHubWebhookSecretAsync(Guid userId)
-    {
-        var secretBytes = RandomNumberGenerator.GetBytes(32);
-        var secretHex = Convert.ToHexString(secretBytes).ToLowerInvariant();
-
-        var enc = GetHookProtector().Protect(secretHex);
-        var user = await _db.Users.FindAsync(userId) ?? throw new InvalidOperationException("User not found.");
-        user.EncryptedGitHubWebhookSecret = enc;
+        var secret = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)).ToLowerInvariant();
+        var u      = await _db.Users.FindAsync(uid) ?? throw new InvalidOperationException("User not found.");
+        u.EncryptedGitHubWebhookSecret = HookProt.Protect(secret);
         await _db.SaveChangesAsync();
-
-        return secretHex; // return plain secret exactly once
+        return secret;
     }
 
-    public async Task<string?> GetDecryptedGitHubWebhookSecretAsync(Guid userId)
+    public async Task<string?> GetDecryptedGitHubWebhookSecretAsync(Guid uid)
+        => (await _db.Users.AsNoTracking()
+                 .Where(x => x.Id == uid)
+                 .Select(x => x.EncryptedGitHubWebhookSecret)
+                 .FirstOrDefaultAsync()) is string enc
+            ? HookProt.Unprotect(enc)
+            : null;
+
+    /* ───── Azure DevOps ───── */
+
+    public async Task<(bool, string?)> StoreAzurePatAsync(Guid uid, string pat, string org, string project)
     {
-        var enc = await _db.Users.AsNoTracking()
-            .Where(u => u.Id == userId)
-            .Select(u => u.EncryptedGitHubWebhookSecret)
-            .FirstOrDefaultAsync();
+        if (!await IsAzurePatValidAsync(pat, org))                      return (false, "Invalid Azure PAT.");
+        if (!await IsProjectAccessibleAsync(pat, org, project))        return (false, "PAT lacks access to project.");
 
-        return enc is null ? null : GetHookProtector().Unprotect(enc);
+        var u = await _db.Users.FindAsync(uid) ?? throw new InvalidOperationException("User not found.");
+        u.EncryptedAzurePat = AzProt.Protect(pat);
+        u.AzureOrganization = org;
+        u.AzureProject      = project;
+        u.HasAzureConfig    = true;
+        await _db.SaveChangesAsync();
+        return (true, null);
     }
 
-    /* ───────── validation helpers (unchanged) ───────── */
+    public async Task<string?> GetDecryptedAzurePatAsync(Guid uid)
+        => (await _db.Users.AsNoTracking()
+                 .Where(x => x.Id == uid)
+                 .Select(x => x.EncryptedAzurePat)
+                 .FirstOrDefaultAsync()) is string enc
+            ? AzProt.Unprotect(enc)
+            : null;
 
-    public async Task<bool> IsGitHubPatValidAsync(string pat)
+    public async Task<(string?, string?, string?)> GetAzureCredentialsAsync(Guid uid)
+    {
+        var u = await _db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Id == uid);
+        return u is null
+            ? (null, null, null)
+            : (u.EncryptedAzurePat is null ? null : AzProt.Unprotect(u.EncryptedAzurePat),
+               u.AzureOrganization,
+               u.AzureProject);
+    }
+
+    /* ───── validation helpers (public via interface) ───── */
+
+    public Task<bool> IsGitHubPatValidAsync(string pat)
+        => HeadOk("https://api.github.com/user", pat, "token");
+
+    public Task<bool> IsOwnerRepoValidAsync(string pat, string ownerRepo)
+        => HeadOk($"https://api.github.com/repos/{ownerRepo}", pat, "token");
+
+    public Task<bool> IsAzurePatValidAsync(string pat, string org)
+        => HeadOk($"https://dev.azure.com/{org}/_apis/projects?api-version=7.1-preview.4",
+                  pat, "Basic", true);
+
+    public Task<bool> IsProjectAccessibleAsync(string pat, string org, string project)
+        => HeadOk($"https://dev.azure.com/{org}/{project}/_apis/build/builds?api-version=7.1-preview.7",
+                  pat, "Basic", true);
+
+    /* ───── shared HEAD helper ───── */
+
+    async Task<bool> HeadOk(string url, string secret, string scheme, bool isAzure = false)
     {
         try
         {
-            var client = _httpClientFactory.CreateClient();
-            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("DevOpsDashboard", "1.0"));
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("token", pat);
+            var c = _http.CreateClient();
+            if (isAzure)
+                c.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue(scheme, Convert.ToBase64String(Encoding.ASCII.GetBytes($":{secret}")));
+            else
+                c.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(scheme, secret);
 
-            var res = await client.GetAsync("https://api.github.com/user");
-            return res.IsSuccessStatusCode;
+            c.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("DevOpsDashboard", "1.0"));
+            var r = await c.GetAsync(url);
+            return r.IsSuccessStatusCode;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "PAT validation error.");
-            return false;
-        }
-    }
-
-    public async Task<bool> IsOwnerRepoValidAsync(string pat, string ownerRepo)
-    {
-        var parts = ownerRepo.Split('/');
-        if (parts.Length != 2) return false;
-        try
-        {
-            var client = _httpClientFactory.CreateClient();
-            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("DevOpsDashboard", "1.0"));
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("token", pat);
-
-            var res = await client.GetAsync($"https://api.github.com/repos/{ownerRepo}");
-            return res.IsSuccessStatusCode;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Repo validation error for {OwnerRepo}.", ownerRepo);
+            _log.LogError(ex, "PAT validation error for {Url}", url);
             return false;
         }
     }
