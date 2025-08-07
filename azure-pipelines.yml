@@ -83,30 +83,20 @@ stages:
                 --target runtime
 
           # ---------- CLIENT ----------
-          - task: Docker@2
+          - script: |
+              docker build \
+                --build-arg NEXT_PUBLIC_SELF_URL="$(NEXT_PUBLIC_SELF_URL)" \
+                --build-arg DOTNET_API_BASE_URL="$(DOTNET_API_BASE_URL)" \
+                -t $(containerRegistry)/$(clientImageRepository):$(tag) \
+                -t $(containerRegistry)/$(clientImageRepository):latest \
+                -f $(clientDockerfilePath) \
+                $(clientBuildContext)
             displayName: Build client image
-            inputs:
-              command: build
-              repository: $(clientImageRepository)
-              dockerfile: $(clientDockerfilePath)
-              buildContext: $(clientBuildContext)
-              containerRegistry: $(dockerRegistryServiceConnection)
-              tags: |
-                $(tag)
-                latest
-              buildArguments: |
-                NEXT_PUBLIC_SELF_URL=$(NEXT_PUBLIC_SELF_URL)
-                DOTNET_API_BASE_URL=$(DOTNET_API_BASE_URL)
 
-          - task: Docker@2
+          - script: |
+              docker push $(containerRegistry)/$(clientImageRepository):$(tag)
+              docker push $(containerRegistry)/$(clientImageRepository):latest
             displayName: Push client image
-            inputs:
-              command: push
-              repository: $(clientImageRepository)
-              containerRegistry: $(dockerRegistryServiceConnection)
-              tags: |
-                $(tag)
-                latest
 
           # ---------- run-info ----------
           - script: |
