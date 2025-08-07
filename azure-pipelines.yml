@@ -1,5 +1,4 @@
-# azure-pipelines.yml  (working version)
-
+# azure-pipelines.yml – extended to match GitHub workflow features
 trigger:
   - azmaster
 
@@ -11,7 +10,7 @@ variables:
   dockerRegistryServiceConnection: "ee2aa85b-89a3-47c9-b26b-b3c796e95bc0"
   containerRegistry: "devopsdashboard.azurecr.io"
 
-  # ARM connection (AzureCLI@2)  ← NEW
+  # ARM connection (AzureCLI@2)
   armServiceConnection: "devops-aca-rg"
 
   # image / paths
@@ -19,25 +18,60 @@ variables:
   clientImageRepository: "devopsclient"
   serverDockerfilePath: "$(Build.SourcesDirectory)/Devops/Dockerfile"
   clientDockerfilePath: "$(Build.SourcesDirectory)/client/Dockerfile"
-  serverBuildContext: "$(Build.SourcesDirectory)/Devops"
+  serverBuildContext: "$(Build.SourcesDirectory)"
   clientBuildContext: "$(Build.SourcesDirectory)/client"
-
-  tag: "$(Build.BuildId)"
-  vmImageName: "ubuntu-latest"
 
   # ACA targets
   resourceGroup: "Devops-rg"
   clientAppName: "devopsclient"
   serverAppName: "devopsserver"
 
+  tag: "$(Build.BuildId)"
+  vmImageName: "ubuntu-latest"
+
 stages:
-  # ───── Build & push ─────
+  # ─────────────────────────────────────────────────────────────────────────────
+  # BUILD STAGE
+  # ─────────────────────────────────────────────────────────────────────────────
   - stage: Build
-    displayName: Build and push images
+    displayName: Build, test, push images
     jobs:
-      - job: Build
+      # -------------------------------------------------------------------------
+      # 1) Run unit tests inside the Docker “report” stage (same trick as GH-CI)
+      # -------------------------------------------------------------------------
+      - job: Run_Unit_Tests
+        displayName: Run tests & collect .trx
         pool: { vmImage: $(vmImageName) }
         steps:
+          - script: |
+              docker build \
+                -f $(serverDockerfilePath) \
+                --target report \
+                -o $(Build.ArtifactStagingDirectory)/tests \
+                $(serverBuildContext)
+            displayName: Build report stage (+ run tests)
+
+          - task: PublishTestResults@2
+            displayName: Publish .trx to pipeline
+            inputs:
+              testResultsFiles: "$(Build.ArtifactStagingDirectory)/tests/**/*.trx"
+              testRunTitle: "Unit Tests $(Build.BuildId)"
+              failTaskOnFailedTests: true
+
+          - task: PublishBuildArtifacts@1
+            displayName: Upload raw .trx artefact
+            inputs:
+              artifactName: "test-results-$(Build.BuildId)"
+              pathToPublish: "$(Build.ArtifactStagingDirectory)/tests"
+
+      # -------------------------------------------------------------------------
+      # 2) Build & push runtime / client images
+      # -------------------------------------------------------------------------
+      - job: Build_And_Push
+        dependsOn: Run_Unit_Tests
+        pool: { vmImage: $(vmImageName) }
+        steps:
+          # ---------- SERVER ----------
           - task: Docker@2
             displayName: Build & push server
             inputs:
@@ -49,7 +83,9 @@ stages:
               tags: |
                 $(tag)
                 latest
+              arguments: "--target runtime"
 
+          # ---------- CLIENT ----------
           - task: Docker@2
             displayName: Build & push client
             inputs:
@@ -61,10 +97,28 @@ stages:
               tags: |
                 $(tag)
                 latest
+              buildArguments: |
+                NEXT_PUBLIC_SELF_URL=$(NEXT_PUBLIC_SELF_URL)
+                DOTNET_API_BASE_URL=$(DOTNET_API_BASE_URL)
 
-  # ───── Deploy ─────
+          # ---------- run-info.txt (mirrors GH Action) ----------
+          - script: |
+              echo "Build ID: $(Build.BuildId)"          >  run-info.txt
+              echo "Source Version: $(Build.SourceVersion)" >> run-info.txt
+              echo "Tag: $(tag)"                           >> run-info.txt
+            displayName: Write run info
+
+          - task: PublishBuildArtifacts@1
+            displayName: Upload run-info.txt
+            inputs:
+              artifactName: "run-info-$(Build.BuildId)"
+              pathToPublish: "run-info.txt"
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # DEPLOY STAGE
+  # ─────────────────────────────────────────────────────────────────────────────
   - stage: Deploy
-    displayName: Update Container Apps
+    displayName: Roll revisions in Container Apps
     dependsOn: Build
     jobs:
       - job: RollRevisions
@@ -73,7 +127,7 @@ stages:
           - task: AzureCLI@2
             displayName: Update CLIENT app
             inputs:
-              azureSubscription: $(armServiceConnection) # ← ARM conn
+              azureSubscription: $(armServiceConnection)
               scriptType: bash
               scriptLocation: inlineScript
               inlineScript: |
@@ -85,7 +139,7 @@ stages:
           - task: AzureCLI@2
             displayName: Update SERVER app
             inputs:
-              azureSubscription: $(armServiceConnection) # ← ARM connection
+              azureSubscription: $(armServiceConnection)
               scriptType: bash
               scriptLocation: inlineScript
               inlineScript: |
