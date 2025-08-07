@@ -1,0 +1,69 @@
+name: Build & Deploy – Backend
+
+on:
+  push:
+    branches: [ghbackend]
+
+jobs:
+  build-server:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # ───── Restore + run tests inside Docker & upload TRX ─────
+      - name: Run tests
+        run: |
+          docker build \
+            -f Devops/Dockerfile \
+            --target report \
+            -o ./artifacts \
+            .
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ github.sha }}
+          path: artifacts/test-results.trx
+
+      # ───── Azure / ACR login ─────
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: ACR login
+        run: |
+          docker login ${{ secrets.ACR_NAME }} \
+            -u ${{ secrets.ACR_USERNAME }} \
+            -p ${{ secrets.ACR_PASSWORD }}
+
+      # ───── Build & push server image ─────
+      - name: Build + push server
+        run: |
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          docker build \
+            -t ${{ secrets.ACR_NAME }}/${{ secrets.SERVER_IMAGE_REPO }}:${SHORT_SHA} \
+            -f Devops/Dockerfile \
+            --target runtime \
+            .
+          docker push ${{ secrets.ACR_NAME }}/${{ secrets.SERVER_IMAGE_REPO }}:${SHORT_SHA}
+          docker tag  ${{ secrets.ACR_NAME }}/${{ secrets.SERVER_IMAGE_REPO }}:${SHORT_SHA} \
+                      ${{ secrets.ACR_NAME }}/${{ secrets.SERVER_IMAGE_REPO }}:latest
+          docker push ${{ secrets.ACR_NAME }}/${{ secrets.SERVER_IMAGE_REPO }}:latest
+          echo "SHA=$SHORT_SHA" >> $GITHUB_ENV
+
+      # ───── Deploy container app ─────
+      - name: Deploy server ACA
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          resourceGroup: ${{ secrets.ACA_RESOURCE_GROUP }}
+          containerAppName: ${{ secrets.SERVER_ACA_NAME }}
+          imageToDeploy: ${{ secrets.ACR_NAME }}/${{ secrets.SERVER_IMAGE_REPO }}:${{ env.SHA }}
