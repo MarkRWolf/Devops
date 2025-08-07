@@ -34,7 +34,7 @@ stages:
   - stage: Build
     displayName: Build, test, push
     variables:
-      - group: devops-secrets
+      - group: vars
     jobs:
       # 1) run tests
       - job: Run_Unit_Tests
