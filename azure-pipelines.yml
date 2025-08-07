@@ -95,8 +95,8 @@ stages:
                 $(tag)
                 latest
               buildArguments: |
-                --build-arg NEXT_PUBLIC_SELF_URL=$(NEXT_PUBLIC_SELF_URL)
-                --build-arg DOTNET_API_BASE_URL=$(DOTNET_API_BASE_URL)
+                NEXT_PUBLIC_SELF_URL=$(NEXT_PUBLIC_SELF_URL)
+                DOTNET_API_BASE_URL=$(DOTNET_API_BASE_URL)
 
           # ---------- run-info ----------
           - script: |
