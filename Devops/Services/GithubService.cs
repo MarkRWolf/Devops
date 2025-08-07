@@ -26,7 +26,7 @@ public sealed class GitHubService : IGitHubService
 
     private HttpClient CreateGitHubClient(string pat)
     {
-        var client = _httpClientFactory.CreateClient();
+        var client = _httpClientFactory.CreateClient("github");
         client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("DevOpsDashboard", "1.0"));
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("token", pat);
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github.v3+json"));
@@ -118,7 +118,7 @@ public sealed class GitHubService : IGitHubService
                     _logger.LogError("Redirect URL not found for logs download for {Owner}/{Repo}/{RunId}", owner, repo, runId);
                     return null;
                 }
-                using var downloadClient = _httpClientFactory.CreateClient();
+                using var downloadClient = _httpClientFactory.CreateClient("github");
                 var downloadResponse = await downloadClient.GetAsync(redirectUrl);
                 downloadResponse.EnsureSuccessStatusCode();
                 var contentBytes = await downloadResponse.Content.ReadAsByteArrayAsync();
@@ -173,7 +173,7 @@ public sealed class GitHubService : IGitHubService
                     _logger.LogError("Redirect URL not found for artifact download for {Owner}/{Repo}/{ArtifactId}", owner, repo, artifactId);
                     return null;
                 }
-                using var downloadClient = _httpClientFactory.CreateClient();
+                using var downloadClient = _httpClientFactory.CreateClient("github");
                 var downloadResponse = await downloadClient.GetAsync(redirectUrl);
                 downloadResponse.EnsureSuccessStatusCode();
                 var contentBytes = await downloadResponse.Content.ReadAsByteArrayAsync();
@@ -233,7 +233,7 @@ public sealed class GitHubService : IGitHubService
         var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
         if ((int)response.StatusCode >= 300 && (int)response.StatusCode < 400 && response.Headers.Location is Uri redirect)
         {
-            using var redirectClient = _httpClientFactory.CreateClient();
+            using var redirectClient = _httpClientFactory.CreateClient("github");
             redirectClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("DevOpsDashboard", "1.0"));
             var redirected = await redirectClient.GetAsync(redirect);
             redirected.EnsureSuccessStatusCode();
@@ -286,7 +286,7 @@ public sealed class GitHubService : IGitHubService
         if ((int)response.StatusCode >= 300 && (int)response.StatusCode < 400 &&
             response.Headers.Location is Uri redirectUri)
         {
-            using var downloadClient = _httpClientFactory.CreateClient();
+            using var downloadClient = _httpClientFactory.CreateClient("github");
             var downloadResponse = await downloadClient.GetAsync(redirectUri);
             if (!downloadResponse.IsSuccessStatusCode)
             {

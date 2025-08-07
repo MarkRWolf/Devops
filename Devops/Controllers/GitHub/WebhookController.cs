@@ -1,4 +1,3 @@
-// Controllers/GitHub/WebhookController.cs
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -9,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Devops.Controllers.GitHub
 {
@@ -21,6 +21,7 @@ namespace Devops.Controllers.GitHub
         private readonly ILogger<WebhookController> _logger;
         private readonly DevopsDb _db;
         private readonly IPatService _patService;
+        private readonly IMemoryCache _cache;
         private readonly byte[] _projectSecretBytes;
         private readonly string? _projectOwnerRepo;
 
@@ -29,12 +30,14 @@ namespace Devops.Controllers.GitHub
             IConfiguration cfg,
             ILogger<WebhookController> logger,
             DevopsDb db,
-            IPatService patService)
+            IPatService patService,
+            IMemoryCache cache)
         {
             _hub = hub;
             _logger = logger;
             _db = db;
             _patService = patService;
+            _cache = cache;
 
             _projectOwnerRepo = cfg["GitHub:ProjectOwnerRepo"];
             var projSecret = cfg["GitHub:WebhookSecret"] ?? throw new ArgumentNullException("GitHub:WebhookSecret");
@@ -61,16 +64,13 @@ namespace Devops.Controllers.GitHub
                 return Ok();
             }
 
-            // repo full name
             string? repoFull = root.GetProperty("repository").GetProperty("full_name").GetString();
-
             if (string.IsNullOrWhiteSpace(repoFull))
             {
                 _logger.LogWarning("repository.full_name missing in webhook payload.");
                 return Ok();
             }
 
-            /* ─── public project (homepage broadcasts my stats to client.all) ─── */
             if (string.Equals(repoFull, _projectOwnerRepo, StringComparison.OrdinalIgnoreCase))
             {
                 if (!Verify(signature, body, _projectSecretBytes))
@@ -79,12 +79,12 @@ namespace Devops.Controllers.GitHub
                     return Unauthorized();
                 }
 
+                _cache.Remove($"runs-{_projectOwnerRepo}");
                 await _hub.Clients.All.SendAsync("ReceiveWorkflowRun", run);
                 _logger.LogInformation("Public workflow_run broadcasted to ALL for {Repo}.", repoFull);
                 return Ok();
             }
 
-            /* ─── user-specific repo (SHOULD NEVER BROADCAST TO CLIENTS.ALL!!) ─── */
             var users = await _db.Users
                 .AsNoTracking()
                 .Where(u => u.HasGitHubConfig && u.GitHubOwnerRepo == repoFull)
@@ -106,6 +106,7 @@ namespace Devops.Controllers.GitHub
                 var secretBytes = Encoding.UTF8.GetBytes(secret);
                 if (!Verify(signature, body, secretBytes)) continue;
 
+                _cache.Remove($"runs-{userId}-{repoFull}");
                 await _hub.Clients.Group($"user-{userId}")
                     .SendAsync("ReceiveWorkflowRun", run);
                 delivered++;
@@ -114,8 +115,6 @@ namespace Devops.Controllers.GitHub
             _logger.LogInformation("Webhook for {Repo} delivered to {Count} user(s).", repoFull, delivered);
             return Ok();
         }
-
-        /* ───────── helpers ───────── */
 
         private static bool Verify(string signedHeader, string payload, byte[] secret)
         {

@@ -10,7 +10,8 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.DataProtection;
 using System.Text.Json;
 using Azure.Identity;
-using Devops.Hubs; // SignalR hub namespace
+using Devops.Hubs;
+using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 var cfg = builder.Configuration;
@@ -92,7 +93,7 @@ svc.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
        };
    });
 
-// ───── CORS ─────────────────────────────────
+// ───── Define CORS ─────────────────────────────────
 svc.AddCors(options =>
 {
     options.AddPolicy(name: "Local", 
@@ -119,7 +120,13 @@ svc.AddScoped<IAuthService, AuthService>();
 svc.AddScoped<IPatService, PatService>();
 svc.AddScoped<IGitHubService, GitHubService>();
 svc.AddHttpClient();
+svc.AddHttpClient("github")
+   .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+   {
+       AutomaticDecompression = DecompressionMethods.All
+   });
 svc.AddLogging();
+svc.AddMemoryCache();
 
 svc.AddControllers()
    .AddJsonOptions(o => o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
@@ -128,9 +135,9 @@ svc.AddHealthChecks();
 
 var app = builder.Build();
 
+/*
 app.Use(async (context, next) =>
 {
-    // Log all requests for the SignalR path, regardless of method
     if (context.Request.Path.StartsWithSegments("/WS/workflowHub"))
     {
         app.Logger.LogDebug("--- SignalR DEBUG Request START ---");
@@ -144,6 +151,7 @@ app.Use(async (context, next) =>
     }
     await next(context);
 });
+*/
 
 app.Use(async (context, next) =>
 {
@@ -175,11 +183,10 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 });
 
-// Use CORS policy based on environment
 if (app.Environment.IsDevelopment())
-    app.UseCors("Local"); // Use "Local" policy in Development
+    app.UseCors("Local");
 else
-    app.UseCors("Production"); // Use "Production" policy otherwise (e.g., in Azure)
+    app.UseCors("Production"); 
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -187,12 +194,10 @@ app.UseAuthorization();
 app.MapHealthChecks("/health");
 app.MapHealthChecks("/API/health");
 
-// Apply CORS to SignalR Hub conditionally based on environment
 app.MapHub<WorkflowHub>("/WS/workflowHub")
-    .RequireCors(app.Environment.IsDevelopment() ? "Local" : "Production"); // Apply correct CORS policy
-app.MapControllers();
+    .RequireCors(app.Environment.IsDevelopment() ? "Local" : "Production");
 
-// ───── SIGNALR HUB ─────────────────────────
+app.MapControllers();
 
 app.Run();
 
