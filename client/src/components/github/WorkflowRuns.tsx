@@ -11,9 +11,17 @@ interface WorkflowRunsProps {
 const WorkflowRuns = ({ runs, project = "" }: WorkflowRunsProps) => {
   const { socketedRuns } = useWorkflowUpdates();
   const out = [...runs];
-  const pos = new Map(out.map((r, i) => [r.id, i]));
+  const pos = new Map(out.map((r, i) => [r.id, i] as const));
 
-  for (const s of socketedRuns) void (pos.has(s.id) ? (out[pos.get(s.id)!] = s) : out.unshift(s));
+  for (let i = socketedRuns.length - 1; i >= 0; i--) {
+    const s = socketedRuns[i];
+    const idx = pos.get(s.id);
+    if (idx !== undefined) {
+      out[idx] = s;
+    } else {
+      out.unshift(s);
+    }
+  }
 
   const merged = out;
   return (
