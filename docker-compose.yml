@@ -29,14 +29,15 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__DevopsDB: Server=sqlserver;Database=DevopsDB;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True
       JwtSettings__Secret: ${JWT_SETTINGS_SECRET}
-      JwtSettings__Issuer: http://api.devops.local
-      JwtSettings__Audience: http://devops.local
+      JwtSettings__Issuer: http://localhost
+      JwtSettings__Audience: http://localhost
       GitHub__ProjectPat: ${GITHUB_PROJECT_PAT}
       GitHub__ProjectOwnerRepo: "MarkRWolf/Devops"
       GitHub__WebhookSecret: ${GITHUB_REPO_WEBHOOK_SECRET}
       Azure_ProjectOrganization: "igotzeddm"
-      Azure__ProjectName: "MarkRWolf/Devops"
+      Azure__ProjectName: "Devops-Dashboard"
       Azure__ProjectPat: ${AZURE_PROJECT_PAT}
+      DP_KEYS_DIR: /app/dpkeys
     ports: ["8080:5205"]
     volumes:
       - devops_data_protection_keys:/app/dpkeys

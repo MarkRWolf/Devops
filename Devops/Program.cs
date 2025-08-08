@@ -38,25 +38,38 @@ svc.AddIdentityCore<DevopsUser>(o => o.Password.RequireNonAlphanumeric = false)
 
 // ───── DATA PROTECTION ───────────────────────
 var blobUri = cfg["AzureBlob:KeyUri"];
-if (!string.IsNullOrEmpty(blobUri))
+var explicitKeysDir = Environment.GetEnvironmentVariable("DP_KEYS_DIR");
+
+if (!string.IsNullOrWhiteSpace(blobUri))
 {
+    // PROD: Azure Blob
     var credential = new DefaultAzureCredential();
     svc.AddDataProtection()
        .SetApplicationName("Devops")
        .PersistKeysToAzureBlobStorage(new Uri(blobUri), credential);
 }
+else if (!string.IsNullOrWhiteSpace(explicitKeysDir))
+{
+    // DOCKER/COMPOSE
+    Directory.CreateDirectory(explicitKeysDir);
+    svc.AddDataProtection()
+       .SetApplicationName("Devops")
+       .PersistKeysToFileSystem(new DirectoryInfo(explicitKeysDir));
+}
 else
 {
-    var keysPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Devops", "dpkeys");
+    // LOCAL DEV
+    var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+    var keysPath = string.IsNullOrWhiteSpace(localAppData)
+        ? Path.Combine(AppContext.BaseDirectory, "dpkeys")
+        : Path.Combine(localAppData, "Devops", "dpkeys");
 
     Directory.CreateDirectory(keysPath);
-
     svc.AddDataProtection()
        .SetApplicationName("Devops")
        .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
 }
+
 
 // ───── JWT & AUTHENTICATION ─────────────────
 var key = Encoding.UTF8.GetBytes(cfg["JwtSettings:Secret"]!);
