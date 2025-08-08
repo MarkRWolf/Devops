@@ -5,7 +5,6 @@ import React from "react";
 import { useTheme } from "next-themes";
 import { WorkflowBranchPie } from "./charts/WorkflowBranchPie";
 import { WorkflowDurationTrend } from "./charts/WorkflowDurationTrend";
-import { WorkflowEventBar } from "./charts/WorkflowEventBar";
 import { WorkflowSuccessTrend } from "./charts/WorkflowSuccessTrend";
 import { WorkflowStatusPie } from "./charts/WorkflowStatusPie";
 import { partitionRuns } from "@/lib/github/stats";
