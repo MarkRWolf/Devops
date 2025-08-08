@@ -11,11 +11,15 @@ export default async function Home() {
   const projectWorkflowRuns = await fetchWorkflowRuns("/project");
 
   return (
-    <div className="flex flex-col items-center gap-4 mt-10">
+    <div className="flex flex-col items-center gap-2 mt-10">
       <h1 className="text-xl">Welcome to my Devops Dashboard</h1>
-      <h2>You&pos;re currently viewing metrics for this project</h2>
+      <h2>You&apos;re currently viewing metrics for this project</h2>
       <h2>
-        Login on <Link href={"/login"}>Dashboard</Link> to connect your own project instead
+        Login on{" "}
+        <Link href={"/login"} className="underline">
+          Dashboard
+        </Link>{" "}
+        to connect your own project
       </h2>
       <Charts workflowRuns={projectWorkflowRuns} />
       <WorkflowUpdatesProvider>
