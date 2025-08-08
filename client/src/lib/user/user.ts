@@ -4,4 +4,5 @@ export interface User {
   username: string;
   isAdmin: boolean;
   hasGitHubConfig: boolean;
+  hasAzureConfig: boolean;
 }

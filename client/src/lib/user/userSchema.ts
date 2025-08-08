@@ -19,7 +19,7 @@ export const loginSchema = z.object({
 
 export const gitHubPatSchema = z.object({
   gitHubPat: z.string().min(1, "Personal Access Token is required"),
-  GitHubOwnerRepo: z
+  gitHubOwnerRepo: z
     .string()
     .min(1, "Owner/Repo cannot be empty.")
     .regex(
@@ -28,6 +28,13 @@ export const gitHubPatSchema = z.object({
     ),
 });
 
+export const azurePatSchema = z.object({
+  azurePat: z.string().min(1, "Azure PAT is required"),
+  organization: z.string().min(1, "Organization is required"),
+  project: z.string().min(1, "Project is required"),
+});
+
 export type SignupInput = z.infer<typeof signupSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type PatInput = z.infer<typeof gitHubPatSchema>;
+export type AzurePatInput = z.infer<typeof azurePatSchema>;

@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { GitHubWorkflowRun, GitHubJob, GitHubArtifact } from "@/lib/github/models";
+import { formatDateTime } from "@/lib/helpers/date";
 
 interface WorkflowRunDetailsProps {
   run: GitHubWorkflowRun;
@@ -83,17 +84,7 @@ export default function WorkflowRunDetails({ run, urlInsert }: WorkflowRunDetail
             </span>
           </p>
           <p className="text-xs text-muted-foreground">
-            Run #{run.run_number} •{" "}
-            {new Date(run.created_at).toLocaleString("da-DK", {
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit",
-              hourCycle: "h23",
-              timeZone: "Europe/Copenhagen",
-            })}
+            Run #{run.run_number} • {formatDateTime(run.created_at)}
           </p>
           {run.html_url && (
             <a
