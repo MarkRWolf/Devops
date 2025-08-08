@@ -47,9 +47,15 @@ if (!string.IsNullOrEmpty(blobUri))
 }
 else
 {
+    var keysPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Devops", "dpkeys");
+
+    Directory.CreateDirectory(keysPath);
+
     svc.AddDataProtection()
        .SetApplicationName("Devops")
-       .PersistKeysToFileSystem(new DirectoryInfo("/app/dpkeys"));
+       .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
 }
 
 // ───── JWT & AUTHENTICATION ─────────────────
@@ -119,6 +125,7 @@ svc.AddSignalR();
 svc.AddScoped<IAuthService, AuthService>();
 svc.AddScoped<IPatService, PatService>();
 svc.AddScoped<IGitHubService, GitHubService>();
+svc.AddScoped<IAzureDevOpsService, AzureDevOpsService>();
 svc.AddHttpClient();
 svc.AddHttpClient("github")
    .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler

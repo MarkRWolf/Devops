@@ -5,10 +5,17 @@ import WorkflowRuns from "@/components/github/WorkflowRuns";
 import { fetchWorkflowRuns } from "@/lib/github/helpers";
 import Charts from "@/components/charts/Charts";
 import { WorkflowUpdatesProvider } from "@/components/github/WorkflowUpdatesProvider";
+import AzureCharts from "@/components/azure/AzureCharts";
+import AzureBuilds from "@/components/azure/AzureBuilds";
+import { fetchAzureBuilds } from "@/lib/azure/helpers";
 import Link from "next/link";
 
 export default async function Home() {
-  const projectWorkflowRuns = await fetchWorkflowRuns("/project");
+  const project = "/project";
+  const [projectWorkflowRuns, projectAzureBuilds] = await Promise.all([
+    fetchWorkflowRuns(project),
+    fetchAzureBuilds(project),
+  ]);
 
   return (
     <div className="flex flex-col items-center gap-2 mt-10">
@@ -21,10 +28,15 @@ export default async function Home() {
         </Link>{" "}
         to connect your own project
       </h2>
+      {/* GitHub */}
       <Charts workflowRuns={projectWorkflowRuns} />
       <WorkflowUpdatesProvider>
-        <WorkflowRuns runs={projectWorkflowRuns} project="/project" />
+        <WorkflowRuns runs={projectWorkflowRuns} project={project} />
       </WorkflowUpdatesProvider>
+
+      {/* Azure */}
+      <AzureCharts builds={projectAzureBuilds} />
+      <AzureBuilds builds={projectAzureBuilds} project={project} />
     </div>
   );
 }
