@@ -28,9 +28,9 @@ export default function WorkflowCharts({ workflowRuns }: WorkflowChartsProps) {
       textColor={textColor}
     />,
     <WorkflowSuccessTrend key="success-trend" runs={workflowRuns} textColor={textColor} />,
-    <WorkflowEventBar key="event-bar" runs={workflowRuns} textColor={textColor} />,
-    <WorkflowDurationTrend key="duration-trend" runs={workflowRuns} textColor={textColor} />,
     <WorkflowBranchPie key="branch-pie" runs={workflowRuns} textColor={textColor} />,
+    <WorkflowDurationTrend key="duration-trend" runs={workflowRuns} textColor={textColor} />,
+    // <WorkflowEventBar key="event-bar" runs={workflowRuns} textColor={textColor} />,
   ];
 
   return elements.map((el) => (
