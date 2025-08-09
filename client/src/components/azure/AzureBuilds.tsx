@@ -12,9 +12,9 @@ export default function AzureBuilds({
 }) {
   if (!builds?.length) return <p>No Azure builds found or configured.</p>;
   return (
-    <div className="container-main py-6">
+    <div className="py-6">
       <h2 className="text-2xl font-semibold mb-8 text-center">Azure DevOps Builds</h2>
-      <div className="max-w-7xl mx-auto py-4 px-8 border space-y-2">
+      <div className="py-4 px-8 border space-y-2">
         <h2 className="text-lg font-semibold mb-4">Latest Builds:</h2>
         <div className="flex flex-col gap-4">
           {builds.map((b) => (

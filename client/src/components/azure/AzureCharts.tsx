@@ -1,34 +1,16 @@
-// ./client/src/components/azure/AzureCharts.tsx
 "use client";
-import { useTheme } from "next-themes";
+
+import ChartCard from "@/components/ci/charts/ChartCard";
+import Chart from "@/components/ci/charts/Chart";
+import useChartTextColor from "@/components/ci/charts/useChartTextColor";
 import { AzureBuild } from "@/lib/azure/models";
 import { partitionBuilds, buildDurationSeries, buildSuccessSeries } from "@/lib/azure/stats";
-import { Pie, Line } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  ArcElement,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  ChartOptions,
-} from "chart.js";
-ChartJS.register(
-  ArcElement,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement
-);
+import type { ChartOptions } from "chart.js";
 
 export default function AzureCharts({ builds }: { builds: AzureBuild[] }) {
-  const { resolvedTheme } = useTheme();
-  const textColor = resolvedTheme === "dark" ? "hsl(240,6%,90%)" : "hsl(240,6%,10%)";
+  const textColor = useChartTextColor();
   if (!builds?.length) return null;
+
   const { success, failed } = partitionBuilds(builds);
 
   const statusData = {
@@ -41,6 +23,7 @@ export default function AzureCharts({ builds }: { builds: AzureBuild[] }) {
       },
     ],
   };
+
   const statusOpts: ChartOptions<"pie"> = {
     responsive: true,
     maintainAspectRatio: false,
@@ -91,38 +74,39 @@ export default function AzureCharts({ builds }: { builds: AzureBuild[] }) {
     },
   };
 
-  const cards = [
-    <div key="az-status" className="py-8 bg-card flex items-center rounded-2xl shadow-lg">
-      <div className="w-full flex flex-col gap-4">
-        <div className="text-center font-semibold mb-2">Azure Builds: Success vs Failed</div>
-        <div className="h-4/5">
-          <Pie data={statusData} options={statusOpts} />
-        </div>
-      </div>
-    </div>,
-    <div key="az-success" className="py-8 bg-card flex items-center rounded-2xl shadow-lg">
-      <div className="w-full flex flex-col gap-4">
-        <div className="text-center font-semibold mb-2">Azure Success Trend</div>
-        <div className="h-4/5">
-          <Line data={succData} options={succOpts} />
-        </div>
-      </div>
-    </div>,
-    <div key="az-duration" className="py-8 bg-card flex items-center rounded-2xl shadow-lg">
-      <div className="w-full flex flex-col gap-4">
-        <div className="text-center font-semibold mb-2">Azure Duration Trend</div>
-        <div className="h-4/5">
-          <Line data={durData} options={durOpts} />
-        </div>
-      </div>
-    </div>,
+  const charts = [
+    {
+      key: "az-status",
+      kind: "pie" as const,
+      title: "Azure Builds: Success vs Failed",
+      data: statusData,
+      options: statusOpts,
+    },
+    {
+      key: "az-success",
+      kind: "line" as const,
+      title: "Azure Success Trend",
+      data: succData,
+      options: succOpts,
+    },
+    {
+      key: "az-duration",
+      kind: "line" as const,
+      title: "Azure Duration Trend",
+      data: durData,
+      options: durOpts,
+    },
   ];
 
   return (
     <div className="py-6">
       <h2 className="text-2xl font-semibold mb-8 text-center">Azure Charts</h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 justify-items-center gap-2 gap-y-12">
-        {cards}
+        {charts.map((c) => (
+          <ChartCard key={c.key}>
+            <Chart kind={c.kind} title={c.title} data={c.data} options={c.options} />
+          </ChartCard>
+        ))}
       </div>
     </div>
   );

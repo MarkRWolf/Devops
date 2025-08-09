@@ -11,7 +11,7 @@ export default function RootLayout({ children }: LayoutProps) {
       <PageTransition>
         <DashboardNav />
         <main className="pl-[256px] pt-header w-full min-h-screen [view-transition-name:layout]">
-          {children}
+          <div className="px-16">{children}</div>
         </main>
       </PageTransition>
     </ThemeProvider>

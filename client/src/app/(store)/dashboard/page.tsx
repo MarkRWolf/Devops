@@ -1,29 +1,36 @@
 export const dynamic = "force-dynamic";
 
-import { checkAuth } from "@/lib/helpers/checkAuth";
-import { fetchWorkflowRuns } from "@/lib/github/helpers";
-import WorkflowRuns from "@/components/github/WorkflowRuns";
-import Charts from "@/components/charts/Charts";
-import { redirect } from "next/navigation";
-import { WorkflowUpdatesProvider } from "@/components/github/WorkflowUpdatesProvider";
-import { fetchAzureBuilds } from "@/lib/azure/helpers";
-import AzureBuilds from "@/components/azure/AzureBuilds";
-import AzureCharts from "@/components/azure/AzureCharts";
+import CIFilter from "@/components/ci/CIFilter";
+import CIMetrics from "@/components/sections/CIMetrics";
+import { requireAuth } from "@/lib/helpers/checkAuth";
+import { getGitHubData, getAzureData } from "@/lib/ci/server";
 
-export default async function DashboardHome() {
-  const user = await checkAuth();
-  if (!user) redirect("/");
-  const [workflowRuns, azureBuilds] = await Promise.all([fetchWorkflowRuns(), fetchAzureBuilds()]);
+export default async function DashboardHome({
+  searchParams,
+}: {
+  searchParams: Promise<{ ci?: string }>;
+}) {
+  const user = await requireAuth();
+  const available = {
+    gh: user.hasGitHubConfig,
+    az: user.hasAzureConfig,
+  } as const;
+
+  // Default to GH if they have it, otherwise AZ
+  const defaultProvider = available.gh ? "gh" : "az";
+  const ciTag = await searchParams;
+  const ci = ciTag.ci === "az" && available.az ? "az" : defaultProvider;
+
+  const [workflowRuns, azureBuilds] =
+    ci === "gh"
+      ? [await getGitHubData("user"), undefined]
+      : [undefined, await getAzureData("user")];
 
   return (
-    <div>
-      <Charts workflowRuns={workflowRuns} />
-      <WorkflowUpdatesProvider>
-        <WorkflowRuns runs={workflowRuns} />
-      </WorkflowUpdatesProvider>
-
-      <AzureCharts builds={azureBuilds} />
-      <AzureBuilds builds={azureBuilds} />
+    <div className="flex flex-col items-center gap-2 mt-10">
+      <h1 className="text-xl">Your Project Metrics</h1>
+      <CIFilter available={available} defaultProvider={defaultProvider} />
+      <CIMetrics workflowRuns={workflowRuns} azureBuilds={azureBuilds} />
     </div>
   );
 }

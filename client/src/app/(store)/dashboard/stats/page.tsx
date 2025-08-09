@@ -1,22 +1,12 @@
 export const dynamic = "force-dynamic";
-import Charts from "@/components/charts/Charts";
-import WorkflowRuns from "@/components/github/WorkflowRuns";
-import { WorkflowUpdatesProvider } from "@/components/github/WorkflowUpdatesProvider";
-import { fetchWorkflowRuns } from "@/lib/github/helpers";
-import { checkAuth } from "@/lib/helpers/checkAuth";
+
+import CIMetrics from "@/components/sections/CIMetrics";
+import { getCiData } from "@/lib/ci/server";
+import { requireAuth } from "@/lib/helpers/checkAuth";
 
 export default async function DashboardStats() {
-  await checkAuth();
-  const workflowRuns = await fetchWorkflowRuns();
+  await requireAuth();
+  const { workflowRuns, azureBuilds } = await getCiData("user");
 
-  return (
-    <div>
-      <div>
-        <Charts workflowRuns={workflowRuns} />
-        <WorkflowUpdatesProvider>
-          <WorkflowRuns runs={workflowRuns} />
-        </WorkflowUpdatesProvider>
-      </div>
-    </div>
-  );
+  return <CIMetrics workflowRuns={workflowRuns} azureBuilds={azureBuilds} view="runs" />;
 }

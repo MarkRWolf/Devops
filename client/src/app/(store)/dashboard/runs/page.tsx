@@ -1,21 +1,34 @@
 export const dynamic = "force-dynamic";
-import AzureBuilds from "@/components/azure/AzureBuilds";
-import WorkflowRuns from "@/components/github/WorkflowRuns";
-import { WorkflowUpdatesProvider } from "@/components/github/WorkflowUpdatesProvider";
-import { fetchAzureBuilds } from "@/lib/azure/helpers";
-import { fetchWorkflowRuns } from "@/lib/github/helpers";
-import { checkAuth } from "@/lib/helpers/checkAuth";
 
-export default async function DashboardStats() {
-  await checkAuth();
-  const [workflowRuns, azureBuilds] = await Promise.all([fetchWorkflowRuns(), fetchAzureBuilds()]);
+import CIFilter from "@/components/ci/CIFilter";
+import CIMetrics from "@/components/sections/CIMetrics";
+import { requireAuth } from "@/lib/helpers/checkAuth";
+import { getGitHubData, getAzureData } from "@/lib/ci/server";
+
+export default async function DashboardRuns({
+  searchParams,
+}: {
+  searchParams: Promise<{ ci?: string }>;
+}) {
+  const user = await requireAuth();
+  const available = {
+    gh: user.hasGitHubConfig,
+    az: user.hasAzureConfig,
+  } as const;
+
+  const defaultProvider = available.gh ? "gh" : "az";
+  const ciTag = await searchParams;
+  const ci = ciTag.ci === "az" && available.az ? "az" : defaultProvider;
+
+  const [workflowRuns, azureBuilds] =
+    ci === "gh"
+      ? [await getGitHubData("user"), undefined]
+      : [undefined, await getAzureData("user")];
 
   return (
     <>
-      <WorkflowUpdatesProvider>
-        <WorkflowRuns runs={workflowRuns} />
-      </WorkflowUpdatesProvider>
-      <AzureBuilds builds={azureBuilds} />
+      <CIFilter available={available} defaultProvider={defaultProvider} />
+      <CIMetrics workflowRuns={workflowRuns} azureBuilds={azureBuilds} view="runs" />
     </>
   );
 }
