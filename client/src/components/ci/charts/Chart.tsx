@@ -21,7 +21,7 @@ export default function Chart({
   return (
     <div className="w-full flex flex-col gap-4">
       <div className="text-center font-semibold mb-2">{title}</div>
-      <div className="h-4/5">
+      <div className="h-4/5 w-4/5 mx-auto">
         {kind === "pie" && (
           <Pie data={data as ChartData<"pie">} options={options as ChartOptions<"pie">} />
         )}

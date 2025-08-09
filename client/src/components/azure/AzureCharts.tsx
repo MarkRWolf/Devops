@@ -27,7 +27,16 @@ export default function AzureCharts({ builds }: { builds: AzureBuild[] }) {
   const statusOpts: ChartOptions<"pie"> = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { position: "bottom", labels: { color: textColor } } },
+    plugins: {
+      legend: {
+        position: "bottom",
+        labels: { color: textColor },
+        onHover: (_e, _item, legend) =>
+          ((legend.chart.canvas as HTMLCanvasElement).style.cursor = "pointer"),
+        onLeave: (_e, _item, legend) =>
+          ((legend.chart.canvas as HTMLCanvasElement).style.cursor = "default"),
+      },
+    },
   };
 
   const succSeries = buildSuccessSeries(builds);
@@ -47,7 +56,16 @@ export default function AzureCharts({ builds }: { builds: AzureBuild[] }) {
   const succOpts: ChartOptions<"line"> = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { position: "bottom", labels: { color: textColor } } },
+    plugins: {
+      legend: {
+        position: "bottom",
+        labels: { color: textColor },
+        onHover: (_e, _item, legend) =>
+          ((legend.chart.canvas as HTMLCanvasElement).style.cursor = "pointer"),
+        onLeave: (_e, _item, legend) =>
+          ((legend.chart.canvas as HTMLCanvasElement).style.cursor = "default"),
+      },
+    },
     scales: { y: { min: 0, max: 120, ticks: { callback: (v) => v + "%" } } },
   };
 
@@ -69,7 +87,14 @@ export default function AzureCharts({ builds }: { builds: AzureBuild[] }) {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { position: "bottom", labels: { color: textColor } },
+      legend: {
+        position: "bottom",
+        labels: { color: textColor },
+        onHover: (_e, _item, legend) =>
+          ((legend.chart.canvas as HTMLCanvasElement).style.cursor = "pointer"),
+        onLeave: (_e, _item, legend) =>
+          ((legend.chart.canvas as HTMLCanvasElement).style.cursor = "default"),
+      },
       tooltip: { callbacks: { label: (ctx) => `${ctx.parsed.y}s` } },
     },
   };

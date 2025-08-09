@@ -1,8 +1,5 @@
-// client/src/components/ci/CIFilter.tsx
 "use client";
-
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
 
 export type CIProvider = "gh" | "az";
 
@@ -11,52 +8,47 @@ interface CIFilterProps {
   defaultProvider: CIProvider;
 }
 
-const PROVIDER_LABELS: Record<CIProvider, string> = {
-  gh: "GitHub",
-  az: "Azure",
-};
-
-// static list of all possible providers (typed as literal tuple)
-const ALL_PROVIDERS: readonly CIProvider[] = ["gh", "az"] as const;
+const LABELS: Record<CIProvider, string> = { gh: "GitHub", az: "Azure" };
+const ALL: readonly CIProvider[] = ["gh", "az"] as const;
 
 export default function CIFilter({ available, defaultProvider }: CIFilterProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Only keep available providers
-  const providers = ALL_PROVIDERS.filter((p) => available[p]);
-
-  // return null if nothing to filter
+  const providers = ALL.filter((p) => available[p]);
   if (providers.length <= 1) return null;
 
-  // Current = ?ci= (or fallback to defaultProvider)
   const ciParam = searchParams.get("ci");
   const current =
     providers.find((p) => p === ciParam) ??
     (providers.includes(defaultProvider) ? defaultProvider : providers[0]);
 
-  const computeUrl = (provider: CIProvider): string => {
-    if (typeof window === "undefined") return "";
+  const setProvider = (p: CIProvider) => {
     const url = new URL(window.location.href);
-    url.searchParams.set("ci", provider);
-    return url.pathname + url.search;
-  };
-
-  const selectProvider = (provider: CIProvider) => {
-    router.push(computeUrl(provider), { scroll: false });
+    url.searchParams.set("ci", p);
+    router.push(url.pathname + url.search, { scroll: false });
   };
 
   return (
-    <div className="flex gap-2 mb-6 w-max mx-auto">
-      {providers.map((provider) => (
-        <Button
-          key={provider}
-          variant={current === provider ? "default" : "outline"}
-          onClick={() => selectProvider(provider)}
-        >
-          {PROVIDER_LABELS[provider]}
-        </Button>
-      ))}
+    <div className="w-max mx-auto mt-8">
+      <div className="inline-flex rounded-full border bg-muted/40 p-1">
+        {providers.map((p) => {
+          const active = current === p;
+          return (
+            <button
+              key={p}
+              type="button"
+              aria-pressed={active}
+              onClick={() => setProvider(p)}
+              className={`px-4 py-1.5 rounded-full text-sm transition-all cursor-pointer ${
+                active ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {LABELS[p]}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

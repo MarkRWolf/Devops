@@ -27,7 +27,16 @@ export default function WorkflowCharts({ workflowRuns }: { workflowRuns: GitHubW
   const statusOpts: ChartOptions<"pie"> = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { position: "bottom", labels: { color: textColor, font: { size: 14 } } } },
+    plugins: {
+      legend: {
+        position: "bottom",
+        labels: { color: textColor, font: { size: 14 } },
+        onHover: (_e, _item, legend) =>
+          ((legend.chart.canvas as HTMLCanvasElement).style.cursor = "pointer"),
+        onLeave: (_e, _item, legend) =>
+          ((legend.chart.canvas as HTMLCanvasElement).style.cursor = "default"),
+      },
+    },
   };
 
   // Success trend
@@ -48,7 +57,16 @@ export default function WorkflowCharts({ workflowRuns }: { workflowRuns: GitHubW
   const succOpts: ChartOptions<"line"> = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { position: "bottom", labels: { color: textColor, font: { size: 14 } } } },
+    plugins: {
+      legend: {
+        position: "bottom",
+        labels: { color: textColor, font: { size: 14 } },
+        onHover: (_e, _item, legend) =>
+          ((legend.chart.canvas as HTMLCanvasElement).style.cursor = "pointer"),
+        onLeave: (_e, _item, legend) =>
+          ((legend.chart.canvas as HTMLCanvasElement).style.cursor = "default"),
+      },
+    },
     scales: { y: { min: 0, max: 120, ticks: { callback: (v) => v + "%" } } },
   };
 
@@ -75,7 +93,16 @@ export default function WorkflowCharts({ workflowRuns }: { workflowRuns: GitHubW
   const branchOpts: ChartOptions<"pie"> = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { position: "bottom", labels: { color: textColor, font: { size: 14 } } } },
+    plugins: {
+      legend: {
+        position: "bottom",
+        labels: { color: textColor, font: { size: 14 } },
+        onHover: (_e, _item, legend) =>
+          ((legend.chart.canvas as HTMLCanvasElement).style.cursor = "pointer"),
+        onLeave: (_e, _item, legend) =>
+          ((legend.chart.canvas as HTMLCanvasElement).style.cursor = "default"),
+      },
+    },
   };
 
   // Duration trend (ms -> s)
@@ -97,7 +124,14 @@ export default function WorkflowCharts({ workflowRuns }: { workflowRuns: GitHubW
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { position: "bottom", labels: { color: textColor, font: { size: 14 } } },
+      legend: {
+        position: "bottom",
+        labels: { color: textColor, font: { size: 14 } },
+        onHover: (_e, _item, legend) =>
+          ((legend.chart.canvas as HTMLCanvasElement).style.cursor = "pointer"),
+        onLeave: (_e, _item, legend) =>
+          ((legend.chart.canvas as HTMLCanvasElement).style.cursor = "default"),
+      },
       tooltip: { callbacks: { label: (ctx) => `${ctx.parsed.y}s` } },
     },
     scales: { y: { ticks: { callback: (v) => `${v}s` } } },
@@ -173,8 +207,8 @@ export default function WorkflowCharts({ workflowRuns }: { workflowRuns: GitHubW
 
   return (
     <div className="py-6">
-      <h2 className="text-2xl font-semibold mb-8 text-center">Azure Charts</h2>
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 justify-items-center gap-2 gap-y-12">
+      <h2 className="text-2xl font-semibold mb-8 text-center">Workflow Charts</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 justify-items-center gap-6 gap-y-12">
         {charts.map((c) => (
           <ChartCard key={c.key}>
             <Chart kind={c.kind} title={c.title} data={c.data} options={c.options} />

@@ -95,6 +95,9 @@
   .pt-header {
     @apply pt-[var(--header-height)];
   }
+  .mt-header {
+    @apply mt-[var(--header-height)];
+  }
 }
 
 :root {
