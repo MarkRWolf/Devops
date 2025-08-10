@@ -34,7 +34,7 @@ services:
       GitHub__ProjectPat: ${GITHUB_PROJECT_PAT}
       GitHub__ProjectOwnerRepo: "MarkRWolf/Devops"
       GitHub__WebhookSecret: ${GITHUB_REPO_WEBHOOK_SECRET}
-      Azure_ProjectOrganization: "igotzeddm"
+      Azure__ProjectOrganization: "igotzeddm"
       Azure__ProjectName: "Devops-Dashboard"
       Azure__ProjectPat: ${AZURE_PROJECT_PAT}
       DP_KEYS_DIR: /app/dpkeys
