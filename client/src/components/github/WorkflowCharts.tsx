@@ -51,6 +51,7 @@ export default function WorkflowCharts({ workflowRuns }: { workflowRuns: GitHubW
         borderColor: "#3B82F6",
         backgroundColor: "rgba(59,130,246,0.2)",
         borderWidth: 2,
+        clip: false,
       },
     ],
   };

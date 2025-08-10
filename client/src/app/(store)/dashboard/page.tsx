@@ -27,7 +27,7 @@ export default async function DashboardHome({
       : [undefined, await getAzureData("user")];
 
   return (
-    <div className="flex flex-col items-center gap-2 mt-10">
+    <div className="flex flex-col items-center gap-2">
       <h1 className="text-xl">Your Project Metrics</h1>
       <CIFilter available={available} defaultProvider={defaultProvider} />
       <CIMetrics workflowRuns={workflowRuns} azureBuilds={azureBuilds} />

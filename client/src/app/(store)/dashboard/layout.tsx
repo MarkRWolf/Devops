@@ -1,19 +1,19 @@
 import DashboardNav from "@/components/dashboardNav/DashboardNav";
 import PageTransition from "../pageTransition";
-import { ThemeProvider } from "../themeProvider";
+import { WorkflowUpdatesProvider } from "@/components/github/realtime";
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 export default function RootLayout({ children }: LayoutProps) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <PageTransition>
+    <PageTransition>
+      <WorkflowUpdatesProvider>
         <DashboardNav />
-        <main className="pl-[256px] pt-header w-full min-h-screen [view-transition-name:layout]">
+        <main className="relative pl-64 w-full min-h-screen [view-transition-name:layout]">
           <div className="px-16">{children}</div>
         </main>
-      </PageTransition>
-    </ThemeProvider>
+      </WorkflowUpdatesProvider>
+    </PageTransition>
   );
 }

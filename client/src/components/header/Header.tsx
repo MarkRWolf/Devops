@@ -14,7 +14,7 @@ const Header = () => {
 
   return (
     <header
-      className={`fixed z-[100] w-full h-header bg-background border-b ${
+      className={`[view-transition-name:header] fixed z-[100] w-full h-header bg-background border-b ${
         shadow ? "shadow-[0_1px_0_0_rgba(0,0,0,0.06)]" : "shadow-none"
       }`}
     >

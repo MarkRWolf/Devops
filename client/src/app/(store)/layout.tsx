@@ -1,5 +1,5 @@
+import { WorkflowUpdatesProvider } from "@/components/github/realtime";
 import "../globals.css";
-import PageTransition from "./pageTransition";
 import { ThemeProvider } from "./themeProvider";
 import Header from "@/components/header/Header";
 
@@ -12,9 +12,9 @@ export default function RootLayout({ children }: LayoutProps) {
       <body>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Header />
-          <PageTransition>
-            <main className="min-h-screen pt-[var(--header-height)]">{children}</main>
-          </PageTransition>
+          <WorkflowUpdatesProvider>
+            <main className="pt-header min-h-screen">{children}</main>
+          </WorkflowUpdatesProvider>
         </ThemeProvider>
       </body>
     </html>

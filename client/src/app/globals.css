@@ -68,6 +68,9 @@
     z-index: 1;
   }
 
+  ::view-transition-group(header) {
+    z-index: 1000 !important;
+  }
   ::view-transition-new(header),
   ::view-transition-old(header) {
     z-index: 999 !important;
@@ -79,6 +82,15 @@
   }
   ::view-transition-old(layout) {
     z-index: 1;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
   }
 
   body {

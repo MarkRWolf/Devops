@@ -4,7 +4,6 @@
 import type { ReactNode } from "react";
 import type { GitHubWorkflowRun } from "@/lib/github/models";
 import type { AzureBuild } from "@/lib/azure/models";
-import { WorkflowUpdatesProvider } from "@/components/github/realtime";
 import WorkflowRuns from "@/components/github/WorkflowRuns";
 import WorkflowCharts from "@/components/github/WorkflowCharts";
 import AzureBuilds from "@/components/azure/AzureBuilds";
@@ -31,13 +30,7 @@ export default function CIMetrics({
 
   const layout: Record<CI, Record<View, ReactNode[]>> = {
     gh: {
-      runs: hasGh
-        ? [
-            <WorkflowUpdatesProvider key="gh-runs">
-              <WorkflowRuns runs={workflowRuns!} project={project} />
-            </WorkflowUpdatesProvider>,
-          ]
-        : [],
+      runs: hasGh ? [<WorkflowRuns key="gh-runs" runs={workflowRuns!} project={project} />] : [],
       charts: hasGh ? [<WorkflowCharts key="gh-charts" workflowRuns={workflowRuns!} />] : [],
     },
     az: {
