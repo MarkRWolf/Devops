@@ -15,15 +15,13 @@ async function proxyHealthRequest(request: NextRequest) {
     return new NextResponse("Server configuration error: Missing API URL.", { status: 500 });
   }
 
-  // Construct the URL directly for the /API/health endpoint
-  const url = new URL(`${DOTNET_INTERNAL_API_BASE_URL}/health`); // Assuming your backend's health endpoint is at /API/health
+  const url = new URL(`${DOTNET_INTERNAL_API_BASE_URL}/health`);
 
   console.log(`[HEALTH ROUTE.TS FETCH] Attempting to fetch health from: ${url.toString()}`);
 
   try {
     const response = await fetch(url, {
       method: request.method,
-      // No need to forward body or specific headers for a GET health check usually
       cache: "no-store",
     });
 
@@ -31,7 +29,6 @@ async function proxyHealthRequest(request: NextRequest) {
       `[HEALTH ROUTE.TS RESPONSE] Backend health responded with status: ${response.status}`
     );
 
-    // Health checks often return empty body or specific text
     return new NextResponse(response.body, {
       status: response.status,
       statusText: response.statusText,

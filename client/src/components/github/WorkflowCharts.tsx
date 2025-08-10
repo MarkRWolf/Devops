@@ -67,7 +67,7 @@ export default function WorkflowCharts({ workflowRuns }: { workflowRuns: GitHubW
           ((legend.chart.canvas as HTMLCanvasElement).style.cursor = "default"),
       },
     },
-    scales: { y: { min: 0, max: 120, ticks: { callback: (v) => v + "%" } } },
+    scales: { y: { min: 0, max: 100, ticks: { callback: (v) => v + "%" } } },
   };
 
   // Branch pie (top 5 + Other)

@@ -66,7 +66,7 @@ export default function AzureCharts({ builds }: { builds: AzureBuild[] }) {
           ((legend.chart.canvas as HTMLCanvasElement).style.cursor = "default"),
       },
     },
-    scales: { y: { min: 0, max: 120, ticks: { callback: (v) => v + "%" } } },
+    scales: { y: { min: 0, max: 100, ticks: { callback: (v) => v + "%" } } },
   };
 
   const durSeries = buildDurationSeries(builds).map((p) => ({ x: p.x, y: p.y / 1000 }));
