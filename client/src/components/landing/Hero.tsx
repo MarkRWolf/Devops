@@ -32,7 +32,7 @@ export default function Hero() {
       className="relative isolate w-full mx-auto mt-10 max-w-[1200px] rounded-[28px] border bg-card text-card-foreground overflow-hidden"
       aria-labelledby="hero-title"
     >
-      {/* Background – clean & centered, no broken edge */}
+      {/* Background */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"
@@ -46,10 +46,10 @@ export default function Hero() {
         }}
       />
 
-      <div className="relative grid gap-10 p-6 sm:p-10 lg:p-12 xl:p-14 lg:grid-cols-[1.05fr_0.95fr] items-center">
+      <div className="relative grid gap-10 p-6 sm:p-10 lg:p-12 xl:p-14 lg:grid-cols-[1.05fr_0.95fr] items-center justify-items-center lg:justify-items-stretch">
         {/* LEFT: copy + CTAs */}
-        <div className="flex flex-col justify-center gap-6 max-w-[600px] mx-auto lg:mx-0">
-          <div className="inline-flex items-center gap-2 w-max px-3 py-1 rounded-full text-xs border bg-background/70 backdrop-blur">
+        <div className="flex flex-col justify-center gap-6 w-full max-w-[600px] mx-auto lg:mx-0">
+          <div className="inline-flex items-center gap-2 w-max px-3 py-1 rounded-full text-xs border bg-background/70 backdrop-blur mx-auto md:mx-0">
             <span className="relative flex size-2">
               <span
                 className={`animate-ping absolute inline-flex h-full w-full rounded-full ${realtimeDotClass} opacity-75`}
@@ -62,7 +62,7 @@ export default function Hero() {
 
           <h1
             id="hero-title"
-            className="text-4xl md:text-5xl lg:text-6xl font-black leading-[1.05] tracking-tight"
+            className="text-4xl md:text-5xl lg:text-6xl font-black leading-[1.05] tracking-tight text-center md:text-left"
             style={{ textWrap: "balance" }}
           >
             Monitor & analyze your{" "}
@@ -72,7 +72,10 @@ export default function Hero() {
             in real time
           </h1>
 
-          <p className="text-base md:text-lg text-muted-foreground" style={{ textWrap: "pretty" }}>
+          <p
+            className="text-base md:text-lg text-muted-foreground text-center md:text-left mx-auto md:mx-0 max-w-[60ch]"
+            style={{ textWrap: "pretty" }}
+          >
             Ingests <span className="font-medium">GitHub Actions</span> &{" "}
             <span className="font-medium">Azure Pipelines</span>, streams updates over{" "}
             <span className="font-medium">SignalR</span>, and renders interactive charts with{" "}
@@ -81,7 +84,7 @@ export default function Hero() {
             <span className="font-medium">Azure Container Apps</span>.
           </p>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 justify-center md:justify-start">
             <Link href="#demo">
               <Button size="lg" className="rounded-xl">
                 Try the demo
@@ -95,10 +98,10 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* RIGHT: showcase panel*/}
-        <div className="relative lg:-mr-6">
+        {/* RIGHT: showcase panel */}
+        <div className="relative w-full max-w-[640px] mx-auto md:mx-0 lg:-mr-6">
           <div className="relative rounded-2xl border bg-background/60 backdrop-blur-xl p-5 md:p-6 shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 min-[440px]:grid-cols-2 gap-3">
               <CiTile
                 title="GitHub Actions"
                 icon={<VscGithubAlt size={20} />}
@@ -119,8 +122,9 @@ export default function Hero() {
               <Stat label="Deployed" value="ACA" />
             </div>
           </div>
-          {/* tech chips  */}
-          <div className="mt-4 flex flex-wrap gap-2">
+
+          {/* tech chips */}
+          <div className="mt-4 flex flex-wrap gap-2 justify-center md:justify-start">
             <TechChip
               icon={<Radio className="size-4" />}
               label={`SignalR realtime: ${realtimeLabel}`}
@@ -130,6 +134,7 @@ export default function Hero() {
             <TechChip icon={<Server className="size-4" />} label=".NET 8 API" />
             <TechChip icon={<Cloud className="size-4" />} label="Azure Container Apps" />
           </div>
+
           {/* soft corner glow */}
           <div
             aria-hidden
