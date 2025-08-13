@@ -41,7 +41,7 @@ namespace Devops.Controllers.GitHub
 
             _projectOwnerRepo = cfg["GitHub:ProjectOwnerRepo"];
             var projSecret = cfg["GitHub:WebhookSecret"];
-            if(string.IsNullOrWhiteSpace(projSecret)) throw new ArgumentNullException("GitHub:WebhookSecret");
+            if (string.IsNullOrWhiteSpace(projSecret)) throw new ArgumentNullException("GitHub:WebhookSecret");
             _projectSecretBytes = Encoding.UTF8.GetBytes(projSecret);
         }
 
@@ -74,16 +74,40 @@ namespace Devops.Controllers.GitHub
 
             if (string.Equals(repoFull, _projectOwnerRepo, StringComparison.OrdinalIgnoreCase))
             {
-                if (!Verify(signature, body, _projectSecretBytes))
+                if (Verify(signature, body, _projectSecretBytes))
                 {
-                    _logger.LogWarning("Signature mismatch for public webhook.");
-                    return Unauthorized();
+                    _cache.Remove($"runs-{_projectOwnerRepo}");
+                    await _hub.Clients.Group("demo").SendAsync("ReceiveWorkflowRun", run);
+                    _logger.LogInformation("Public workflow_run broadcasted to 'demo' group for {Repo}.", repoFull);
+                    return Ok();
                 }
 
-                _cache.Remove($"runs-{_projectOwnerRepo}");
-                await _hub.Clients.Group("demo").SendAsync("ReceiveWorkflowRun", run);
-                _logger.LogInformation("Public workflow_run broadcasted to 'demo' group for {Repo}.", repoFull);
-                return Ok();
+                var usersForProject = await _db.Users
+                    .AsNoTracking()
+                    .Where(u => u.HasGitHubConfig && u.GitHubOwnerRepo == repoFull)
+                    .Select(u => u.Id)
+                    .ToListAsync();
+
+                var deliveredFromUserSecret = 0;
+                foreach (var userId in usersForProject)
+                {
+                    var secret = await _patService.GetDecryptedGitHubWebhookSecretAsync(userId);
+                    if (string.IsNullOrWhiteSpace(secret)) continue;
+                    if (!Verify(signature, body, Encoding.UTF8.GetBytes(secret))) continue;
+
+                    _cache.Remove($"runs-{userId}-{repoFull}");
+                    await _hub.Clients.Group($"user-{userId}").SendAsync("ReceiveWorkflowRun", run);
+                    deliveredFromUserSecret++;
+                }
+
+                if (deliveredFromUserSecret > 0)
+                {
+                    _logger.LogInformation("Project repo webhook matched {Count} user secret(s) for {Repo}.", deliveredFromUserSecret, repoFull);
+                    return Ok();
+                }
+
+                _logger.LogWarning("Signature mismatch for project webhook and no user secret matched for {Repo}.", repoFull);
+                return Unauthorized();
             }
 
             var users = await _db.Users
@@ -108,8 +132,7 @@ namespace Devops.Controllers.GitHub
                 if (!Verify(signature, body, secretBytes)) continue;
 
                 _cache.Remove($"runs-{userId}-{repoFull}");
-                await _hub.Clients.Group($"user-{userId}")
-                    .SendAsync("ReceiveWorkflowRun", run);
+                await _hub.Clients.Group($"user-{userId}").SendAsync("ReceiveWorkflowRun", run);
                 delivered++;
             }
 
