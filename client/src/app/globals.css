@@ -45,7 +45,7 @@
 
 @keyframes slide-in-layout {
   from {
-    transform: translateX(100%);
+    transform: translateX(-100%);
   }
   to {
     transform: translateX(0);
@@ -189,4 +189,23 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.sidebar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: 0 0 16px 2px var(--sidebar-ring);
+  opacity: 0;
+  transition: opacity 200ms ease;
+  z-index: -1;
+}
+
+.sidebar:has(.sidebar-link:hover)::after {
+  opacity: 0.4;
+}
+
+.sidebar:has(.sidebar-link:hover).view-transition::after {
+  opacity: 0.8;
 }

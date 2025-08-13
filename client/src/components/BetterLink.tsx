@@ -7,11 +7,11 @@ interface BetterLinkProps {
   className?: string;
 }
 
-const BetterLink: React.FC<BetterLinkProps> = ({ children, className, href }) => {
+const BetterLink = ({ children, className, href }: BetterLinkProps) => {
   const router = useTransitionRouter();
 
   return (
-    <Link href={href} className={className} scroll onMouseOver={() => router.prefetch(href)}>
+    <Link href={href} className={className} onMouseOver={() => router.prefetch(href)}>
       {children}
     </Link>
   );

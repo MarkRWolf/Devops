@@ -14,7 +14,7 @@ export default function DashboardNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed z-10 w-64 bg-sidebar h-[calc(100dvh-(var(--header-height)))] border-r">
+    <nav className="sidebar [view-transition-name:sidebar] fixed z-10 w-64 bg-sidebar h-[calc(100dvh-(var(--header-height)))] border-r">
       <div className="px-3 py-4">
         <div className="px-2 text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
           Dashboard
@@ -26,7 +26,7 @@ export default function DashboardNav() {
               <BetterLink
                 key={href}
                 href={href}
-                className={`relative px-3 py-2 rounded-lg transition-colors ${
+                className={`sidebar-link relative px-3 py-2 rounded-lg transition-colors ${
                   active
                     ? "bg-muted text-foreground"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
