@@ -78,12 +78,15 @@ svc.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
    {
        o.Events = new JwtBearerEvents
        {
-           OnMessageReceived = ctx =>
-           {
-               if (ctx.Request.Cookies.TryGetValue("DevopsUserToken", out var tok))
-                   ctx.Token = tok;
-               return Task.CompletedTask;
-           },
+            OnMessageReceived = ctx =>
+            {
+                if (ctx.Request.Path.StartsWithSegments("/WS/workflowHub") &&
+                    ctx.Request.Query.TryGetValue("access_token", out var at))
+                    ctx.Token = at;
+                else if (ctx.Request.Cookies.TryGetValue("DevopsUserToken", out var cookie))
+                    ctx.Token = cookie;
+                return Task.CompletedTask;
+            },
            OnAuthenticationFailed = ctx =>
            {
                var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();

@@ -15,13 +15,15 @@ public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEn
     public record SignupReq(string Email, string Password, string Username);
     public record Req(string Email, string Password);
 
-    private CookieOptions CookieOpts => new()
+   private CookieOptions CookieOpts(IWebHostEnvironment env) => new()
     {
         HttpOnly = true,
-        SameSite = SameSiteMode.None,
-        Secure = true,
-        Expires = DateTime.UtcNow.AddDays(30)
+        SameSite = env.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None,
+        Secure = !env.IsDevelopment(),
+        Expires = DateTime.UtcNow.AddDays(30),
+        Path = "/"
     };
+
 
     [HttpPost("signup")]
     public async Task<IActionResult> Register([FromBody] SignupReq r)
@@ -29,7 +31,7 @@ public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEn
         var res = await auth.RegisterAsync(r.Email, r.Password, r.Username);
         if (!res.Success || res.User is null)
             return Conflict(new { errors = res.Errors });  
-        Response.Cookies.Append("DevopsUserToken", res.Token!, CookieOpts);
+        Response.Cookies.Append("DevopsUserToken", res.Token!, CookieOpts(env));
         return StatusCode(201, new { res.User, Message = "User registered successfully." });
     }
 
@@ -39,7 +41,7 @@ public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEn
     {
         var res = await auth.LoginAsync(r.Email, r.Password);
         if (res is null || res.User is null) return Unauthorized(new { errors = new[] { "Invalid credentials." } });
-        Response.Cookies.Append("DevopsUserToken", res.Token!, CookieOpts);
+        Response.Cookies.Append("DevopsUserToken", res.Token!, CookieOpts(env));
         return Ok(new { res.User, Message = "Login successful." });
     }
 

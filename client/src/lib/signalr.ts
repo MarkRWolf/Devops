@@ -1,11 +1,9 @@
-// client/src/lib/signalr.ts
 import {
   HubConnectionBuilder,
   LogLevel,
   HubConnection,
   HubConnectionState,
 } from "@microsoft/signalr";
-import { proxyUrl } from "./settings";
 
 type Entry = {
   hub: HubConnection;
@@ -16,10 +14,22 @@ type Entry = {
 
 const registry = new Map<string, Entry>();
 
+async function getHubToken() {
+  const base = process.env.NEXT_PUBLIC_WS_URL || "";
+  const r = await fetch(`${base}/API/auth/hub-token`, { credentials: "include" });
+  if (!r.ok) return "";
+  const { token } = await r.json();
+  return token as string;
+}
+
 function build(scope: string) {
-  const url = `${proxyUrl || ""}/WS/workflowHub?scope=${encodeURIComponent(scope)}`;
+  const base = process.env.NEXT_PUBLIC_WS_URL || "";
+  const url = `${base}/WS/workflowHub?scope=${encodeURIComponent(scope)}`;
   return new HubConnectionBuilder()
-    .withUrl(url, { withCredentials: true })
+    .withUrl(url, {
+      withCredentials: true,
+      accessTokenFactory: scope === "demo" ? undefined : async () => (await getHubToken()) || "",
+    })
     .configureLogging(LogLevel.Information)
     .build();
 }
@@ -62,10 +72,9 @@ export async function ensureStarted(scope: string) {
     entry.hub.state === HubConnectionState.Connecting
   )
     return;
-  if (!entry.starting) {
+  if (!entry.starting)
     entry.starting = entry.hub.start().finally(() => {
       entry.starting = undefined;
     });
-  }
   return entry.starting;
 }
