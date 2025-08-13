@@ -1,7 +1,7 @@
 "use client";
 
-import { ReactNode, createContext, useContext, useEffect, useMemo, useState } from "react";
-import { HubConnection, HubConnectionState } from "@microsoft/signalr";
+import { ReactNode, createContext, useContext, useEffect, useRef, useState } from "react";
+import { HubConnectionState, HubConnection } from "@microsoft/signalr";
 import { acquireHub, ensureStarted, releaseHub } from "@/lib/signalr";
 import { GitHubWorkflowRun } from "@/lib/ci/github/models";
 import { AzureBuild } from "@/lib/azure/models";
@@ -23,19 +23,19 @@ export function WorkflowUpdatesProvider({
   scope?: string;
 }) {
   const activeScope = scope || "user";
-
-  const hub: HubConnection = useMemo(() => acquireHub(activeScope), [activeScope]);
-
+  const hubRef = useRef<HubConnection | null>(null);
   const [socketedRuns, setSocketedRuns] = useState<GitHubWorkflowRun[]>([]);
   const [socketedAzure, setSocketedAzure] = useState<AzureBuild[]>([]);
   const [state, setState] = useState<HubConnectionState>(HubConnectionState.Disconnected);
 
   useEffect(() => {
+    const hub = acquireHub(activeScope);
+    hubRef.current = hub;
     setSocketedRuns([]);
     setSocketedAzure([]);
     setState(hub.state);
 
-    const onReceiveGh = (incoming: GitHubWorkflowRun) => {
+    const onGh = (incoming: GitHubWorkflowRun) =>
       setSocketedRuns((prev) => {
         const ix = prev.findIndex((r) => r.id === incoming.id);
         if (ix >= 0) {
@@ -45,9 +45,8 @@ export function WorkflowUpdatesProvider({
         }
         return [incoming, ...prev];
       });
-    };
 
-    const onReceiveAz = (incoming: AzureBuild) => {
+    const onAz = (incoming: AzureBuild) =>
       setSocketedAzure((prev) => {
         const i = prev.findIndex((b) => b.id === incoming.id);
         if (i >= 0) {
@@ -57,12 +56,11 @@ export function WorkflowUpdatesProvider({
         }
         return [incoming, ...prev];
       });
-    };
 
     const onState = () => setState(hub.state);
 
-    hub.on("ReceiveWorkflowRun", onReceiveGh);
-    hub.on("ReceiveAzureBuild", onReceiveAz);
+    hub.on("ReceiveWorkflowRun", onGh);
+    hub.on("ReceiveAzureBuild", onAz);
     hub.onreconnected(onState);
     hub.onreconnecting(onState);
     hub.onclose(onState);
@@ -72,11 +70,12 @@ export function WorkflowUpdatesProvider({
       .finally(onState);
 
     return () => {
-      hub.off("ReceiveWorkflowRun", onReceiveGh);
-      hub.off("ReceiveAzureBuild", onReceiveAz);
+      hub.off("ReceiveWorkflowRun", onGh);
+      hub.off("ReceiveAzureBuild", onAz);
       releaseHub(activeScope);
+      hubRef.current = null;
     };
-  }, [hub, activeScope]);
+  }, [activeScope]);
 
   return (
     <Ctx.Provider value={{ socketedRuns, socketedAzure, state, scope: activeScope }}>
