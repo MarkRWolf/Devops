@@ -2,7 +2,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import type { GitHubWorkflowRun } from "@/lib/github/models";
+import type { GitHubWorkflowRun } from "@/lib/ci/github/models";
 import type { AzureBuild } from "@/lib/azure/models";
 import WorkflowRuns from "@/components/github/WorkflowRuns";
 import WorkflowCharts from "@/components/github/WorkflowCharts";

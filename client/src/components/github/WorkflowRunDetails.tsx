@@ -3,7 +3,7 @@
 
 import ExpandablePanel from "@/components/common/ExpandablePanel";
 import { useCiData } from "../ci/details/useCiData";
-import { GitHubWorkflowRun, GitHubJob, GitHubArtifact } from "@/lib/github/models";
+import { GitHubWorkflowRun, GitHubJob, GitHubArtifact } from "@/lib/ci/github/models";
 import { formatDateTime } from "@/lib/helpers/date";
 import { Button } from "@/components/ui/button";
 

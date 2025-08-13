@@ -1,6 +1,7 @@
 "use client";
 import BetterLink from "@/components/BetterLink";
 import { usePathname } from "next/navigation";
+import SignalStatus from "../realtime/SignalStatus";
 
 const routes = [
   { href: "/dashboard", label: "Overview" },
@@ -40,6 +41,7 @@ export default function DashboardNav() {
               </BetterLink>
             );
           })}
+          <SignalStatus className="w-max" />
         </div>
       </div>
     </nav>

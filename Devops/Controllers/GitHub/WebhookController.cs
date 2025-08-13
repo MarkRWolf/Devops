@@ -40,7 +40,8 @@ namespace Devops.Controllers.GitHub
             _cache = cache;
 
             _projectOwnerRepo = cfg["GitHub:ProjectOwnerRepo"];
-            var projSecret = cfg["GitHub:WebhookSecret"] ?? throw new ArgumentNullException("GitHub:WebhookSecret");
+            var projSecret = cfg["GitHub:WebhookSecret"];
+            if(string.IsNullOrWhiteSpace(projSecret)) throw new ArgumentNullException("GitHub:WebhookSecret");
             _projectSecretBytes = Encoding.UTF8.GetBytes(projSecret);
         }
 
@@ -80,8 +81,8 @@ namespace Devops.Controllers.GitHub
                 }
 
                 _cache.Remove($"runs-{_projectOwnerRepo}");
-                await _hub.Clients.All.SendAsync("ReceiveWorkflowRun", run);
-                _logger.LogInformation("Public workflow_run broadcasted to ALL for {Repo}.", repoFull);
+                await _hub.Clients.Group("demo").SendAsync("ReceiveWorkflowRun", run);
+                _logger.LogInformation("Public workflow_run broadcasted to 'demo' group for {Repo}.", repoFull);
                 return Ok();
             }
 

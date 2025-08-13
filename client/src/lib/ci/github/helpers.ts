@@ -1,6 +1,6 @@
-// client/src/lib/github/helpers.ts
+// client/src/lib/ci/github/helpers.ts
 import { headers } from "next/headers";
-import { baseUrl } from "../settings";
+import { baseUrl } from "../../settings";
 import { GitHubWorkflowRun } from "./models";
 
 export const fetchWorkflowRuns = async (project: string = ""): Promise<GitHubWorkflowRun[]> => {

@@ -1,3 +1,4 @@
+// client/src/app/(store)/dashboard/layout.tsx
 import DashboardNav from "@/components/dashboardNav/DashboardNav";
 import PageTransition from "../pageTransition";
 import { WorkflowUpdatesProvider } from "@/components/github/realtime";

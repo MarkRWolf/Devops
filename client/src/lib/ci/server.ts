@@ -1,6 +1,6 @@
 // client/src/lib/ci/server.ts
 import { fetchWorkflowRunsByScope, fetchAzureBuildsByScope, Scope } from "./api";
-import type { GitHubWorkflowRun } from "@/lib/github/models";
+import type { GitHubWorkflowRun } from "@/lib/ci/github/models";
 import type { AzureBuild } from "@/lib/azure/models";
 
 export async function getGitHubData(scope: Scope = "user"): Promise<GitHubWorkflowRun[]> {

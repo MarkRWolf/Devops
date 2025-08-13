@@ -6,7 +6,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Devops.Data;
 using Devops.Services.Interfaces;
@@ -27,6 +26,7 @@ public sealed class PatService : IPatService
     IDataProtector GitProt  => _dp.CreateProtector("GitHubPat");
     IDataProtector HookProt => _dp.CreateProtector("GitHubHook");
     IDataProtector AzProt   => _dp.CreateProtector("AzurePat");
+    IDataProtector AzHookProt => _dp.CreateProtector("AzureHook");
 
     /* ───── GitHub ───── */
 
@@ -110,6 +110,24 @@ public sealed class PatService : IPatService
                u.AzureOrganization,
                u.AzureProject);
     }
+
+    public async Task<string> RefreshAzureWebhookSecretAsync(Guid uid)
+    {
+        var secret = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)).ToLowerInvariant();
+        var u = await _db.Users.FindAsync(uid) ?? throw new InvalidOperationException("User not found.");
+        u.EncryptedAzureWebhookSecret = AzHookProt.Protect(secret);
+        await _db.SaveChangesAsync();
+        return secret;
+    }
+
+    public async Task<string?> GetDecryptedAzureWebhookSecretAsync(Guid uid)
+        => (await _db.Users.AsNoTracking()
+                 .Where(x => x.Id == uid)
+                 .Select(x => x.EncryptedAzureWebhookSecret)
+                 .FirstOrDefaultAsync()) is string enc
+            ? AzHookProt.Unprotect(enc)
+            : null;
+
 
     /* ───── validation helpers (public via interface) ───── */
 

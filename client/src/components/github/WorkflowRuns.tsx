@@ -1,6 +1,6 @@
 // ./client/src/components/github/WorkflowRuns.tsx
 "use client";
-import { GitHubWorkflowRun } from "@/lib/github/models";
+import { GitHubWorkflowRun } from "@/lib/ci/github/models";
 import WorkflowRunDetails from "./WorkflowRunDetails";
 import { useWorkflowUpdates } from "./realtime";
 

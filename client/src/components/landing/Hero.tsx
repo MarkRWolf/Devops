@@ -7,6 +7,7 @@ import { VscGithubAlt, VscAzure } from "react-icons/vsc";
 import { Cloud, LineChart, Radio, Server, GitBranch } from "lucide-react";
 import { useWorkflowUpdates } from "@/components/github/realtime";
 import { HubConnectionState } from "@microsoft/signalr";
+import SignalStatus from "../realtime/SignalStatus";
 
 export default function Hero() {
   const { state } = useWorkflowUpdates();
@@ -19,13 +20,6 @@ export default function Hero() {
       : state === HubConnectionState.Connecting
       ? "Connecting"
       : "Off";
-
-  const realtimeDotClass =
-    state === HubConnectionState.Connected
-      ? "bg-emerald-500"
-      : state === HubConnectionState.Reconnecting || state === HubConnectionState.Connecting
-      ? "bg-amber-400"
-      : "bg-rose-500";
 
   return (
     <section
@@ -49,15 +43,8 @@ export default function Hero() {
       <div className="relative grid gap-10 p-6 sm:p-10 lg:p-12 xl:p-14 lg:grid-cols-[1.05fr_0.95fr] items-center justify-items-center lg:justify-items-stretch">
         {/* LEFT: copy + CTAs */}
         <div className="flex flex-col justify-center gap-6 w-full max-w-[600px] mx-auto lg:mx-0">
-          <div className="inline-flex items-center gap-2 w-max px-3 py-1 rounded-full text-xs border bg-background/70 backdrop-blur mx-auto md:mx-0">
-            <span className="relative flex size-2">
-              <span
-                className={`animate-ping absolute inline-flex h-full w-full rounded-full ${realtimeDotClass} opacity-75`}
-              />
-              <span className={`relative inline-flex rounded-full h-2 w-2 ${realtimeDotClass}`} />
-            </span>
-            <span className="text-muted-foreground">Live demo — Realtime:</span>
-            <span className="font-medium">{realtimeLabel}</span>
+          <div className="inline-flex w-max mx-auto md:mx-0">
+            <SignalStatus />
           </div>
 
           <h1

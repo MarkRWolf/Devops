@@ -82,6 +82,16 @@ public class PatController : ControllerBase
         return Ok(new AzurePatStatusResponse(pat is not null));
     }
 
+    [HttpPost("azure/webhook-secret/refresh")]
+    public async Task<IActionResult> RefreshAzureWebhookSecret()
+    {
+        var uid = GetUserId();
+        if (uid == null) return Unauthorized("Invalid user ID.");
+        var secret = await _pat.RefreshAzureWebhookSecretAsync(uid.Value);
+        return Ok(new { WebhookSecret = secret });
+    }
+
+
     /* ───────────── helpers ───────────── */
     private Guid? GetUserId()
         => Guid.TryParse(User.FindFirstValue("id"), out var id) ? id : null;

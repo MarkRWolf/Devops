@@ -1,4 +1,8 @@
-// 
+// client/src/lib/ci/azure/models.ts
+export interface AzureBuildsResponse {
+  value?: AzureBuild[];
+}
+
 export interface AzureBuild {
   id: number;
   buildNumber?: string;
@@ -7,6 +11,10 @@ export interface AzureBuild {
   queueTime: string;
   startTime?: string;
   finishTime?: string;
+}
+
+export interface AzureTimelineResponse {
+  records?: AzureJob[];
 }
 
 export interface AzureJob {
@@ -18,9 +26,15 @@ export interface AzureJob {
   finishTime?: string;
 }
 
+export interface AzureArtifactsResponse {
+  value?: AzureArtifact[];
+}
+
 export interface AzureArtifact {
   name: string;
-  resource: {
-    downloadUrl?: string;
-  };
+  resource: AzureResource;
+}
+
+export interface AzureResource {
+  downloadUrl?: string;
 }

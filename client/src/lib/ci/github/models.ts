@@ -1,4 +1,4 @@
-// client/src/lib/github/models.ts
+// client/src/lib/ci/github/models.ts
 
 export interface GitHubWorkflowRun {
   id: number;

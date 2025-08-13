@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { getWorkflowHub } from "@/lib/signalr";
-import { GitHubWorkflowRun } from "@/lib/github/models";
+import { GitHubWorkflowRun } from "@/lib/ci/github/models";
 
 export default function WorkflowUpdates() {
   const [lastRun, setLastRun] = useState<GitHubWorkflowRun | null>(null);

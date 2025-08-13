@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { GitHubWorkflowRun } from "@/lib/github/models";
+import { GitHubWorkflowRun } from "@/lib/ci/github/models";
 import { AzureBuild } from "@/lib/azure/models";
 import { baseUrl } from "../settings";
 

@@ -14,6 +14,7 @@ public sealed class DevopsUser : IdentityUser<Guid>
     public string? EncryptedAzurePat { get; set; }
     public string? AzureOrganization { get; set; }
     public string? AzureProject { get; set; }
+    public string? EncryptedAzureWebhookSecret { get; set; }
     public bool HasAzureConfig { get; set; }
 
     public record Public(

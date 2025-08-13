@@ -3,8 +3,8 @@
 import ChartCard from "@/components/ci/charts/ChartCard";
 import Chart from "@/components/ci/charts/Chart";
 import useChartTextColor from "@/components/ci/charts/useChartTextColor";
-import { partitionRuns, buildSuccessSeries, buildDurationSeries } from "@/lib/github/stats";
-import type { GitHubWorkflowRun } from "@/lib/github/models";
+import { partitionRuns, buildSuccessSeries, buildDurationSeries } from "@/lib/ci/github/stats";
+import type { GitHubWorkflowRun } from "@/lib/ci/github/models";
 import type { ChartOptions } from "chart.js";
 
 export default function WorkflowCharts({ workflowRuns }: { workflowRuns: GitHubWorkflowRun[] }) {
