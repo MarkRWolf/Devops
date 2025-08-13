@@ -25,7 +25,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
       <WorkflowUpdatesProvider scope="demo">
         <Hero />
 
-        <section id="demo" className="flex flex-col items-center gap-2 mt-4 w-full">
+        <section id="demo" className="flex flex-col items-center gap-2 mt-6 w-full">
           <h1 className="text-xl">Welcome to my Devops Dashboard</h1>
           <h2>You&apos;re currently viewing metrics for this project</h2>
           <h2>
