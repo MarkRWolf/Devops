@@ -1,4 +1,3 @@
-// ./client/src/app/(store)/dashboard/AzureSection.tsx
 "use client";
 
 import { useState, FormEvent } from "react";
@@ -6,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { azurePatSchema } from "@/lib/user/userSchema";
 import { ZodError } from "zod";
 import { FaCheck } from "react-icons/fa";
+import { RxUpdate } from "react-icons/rx";
+import { FiCopy } from "react-icons/fi";
 
 type Busy = "loading" | "complete" | null;
 
@@ -20,6 +21,51 @@ export default function AzureSection() {
   const [projErr, setProjErr] = useState("");
   const [patErr, setPatErr] = useState("");
   const [status, setStatus] = useState<Busy>(null);
+
+  const [webhookSecret, setWebhookSecret] = useState<string | null>(null);
+  const [secretBusy, setSecretBusy] = useState<"loading" | null>(null);
+
+  const refreshSecret = async () => {
+    if (!confirm("Generate a new Azure webhook secret? The previous secret will be invalidated."))
+      return;
+    setErr("");
+    setSecretBusy("loading");
+    try {
+      const res = await fetch(`/api/pat/azure/webhook-secret/refresh`, {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
+      });
+      if (!res.ok) {
+        let msg = "Unable to refresh Azure webhook secret.";
+        try {
+          const j = await res.json();
+          msg = j.message ?? msg;
+        } catch {}
+        throw new Error(msg);
+      }
+      const { webhookSecret: secret } = (await res.json()) as { webhookSecret: string };
+      setWebhookSecret(secret);
+    } catch (e) {
+      setErr(
+        `Failed to refresh Azure webhook secret: ${
+          e instanceof Error ? e.message : "Unexpected error."
+        }`
+      );
+    } finally {
+      setSecretBusy(null);
+    }
+  };
+
+  const copySecret = async () => {
+    if (!webhookSecret) return;
+    try {
+      await navigator.clipboard.writeText(webhookSecret);
+      alert("Secret copied to clipboard.");
+    } catch {
+      alert("Unable to copy.");
+    }
+  };
 
   const submitAzure = async (e: FormEvent) => {
     e.preventDefault();
@@ -78,6 +124,36 @@ export default function AzureSection() {
   return (
     <section className="space-y-6 border rounded-lg p-4">
       {err && <p className="p-2 rounded bg-red-100 text-red-700">{err}</p>}
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <p>Webhook&nbsp;Secret:</p>
+        {webhookSecret ? (
+          <>
+            <code className="px-2 py-1 bg-muted rounded text-sm break-all">{webhookSecret}</code>
+            <button
+              type="button"
+              className="p-1 hover:bg-muted rounded"
+              onClick={copySecret}
+              aria-label="Copy webhook secret"
+              title="Copy webhook secret"
+            >
+              <FiCopy />
+            </button>
+          </>
+        ) : (
+          <span className="text-muted-foreground text-sm">not generated in this session</span>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={refreshSecret}
+          disabled={secretBusy === "loading"}
+          aria-label="Refresh webhook secret"
+          title="Refresh webhook secret"
+        >
+          {secretBusy === "loading" ? <RxUpdate className="animate-spin" /> : <RxUpdate />}
+        </Button>
+      </div>
 
       <form onSubmit={submitAzure} className="space-y-4">
         <div>
