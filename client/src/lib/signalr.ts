@@ -17,7 +17,7 @@ type Entry = {
 const registry = new Map<string, Entry>();
 
 function build(scope: string) {
-  const url = new URL(`${proxyUrl || ""}/WS/workflowHub`);
+  const url = new URL(`/WS/workflowHub`);
   url.searchParams.set("scope", scope);
   return new HubConnectionBuilder()
     .withUrl(url.toString(), { withCredentials: true })
