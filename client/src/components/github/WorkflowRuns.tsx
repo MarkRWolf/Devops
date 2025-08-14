@@ -25,7 +25,6 @@ export default function WorkflowRuns({
   const merged = out;
   return (
     <div className="py-6">
-      <h2 className="text-2xl font-semibold mb-8 text-center">Workflow Runs</h2>
       {merged.length ? (
         <div className="mx-auto py-4 px-8 border space-y-2">
           <h2 className="text-lg font-semibold mb-4">Latest Project Workflow Runs:</h2>
