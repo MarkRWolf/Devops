@@ -11,8 +11,8 @@ export default function RootLayout({ children }: LayoutProps) {
     <PageTransition>
       <WorkflowUpdatesProvider>
         <DashboardNav />
-        <main className="relative pl-64 w-full min-h-screen [view-transition-name:layout]">
-          <div className="px-16">{children}</div>
+        <main className="relative lg:pl-64 w-full min-h-screen [view-transition-name:layout]">
+          <div className="px-2 sm:px-4 md:px-8 lg:px-16">{children}</div>
         </main>
       </WorkflowUpdatesProvider>
     </PageTransition>

@@ -208,7 +208,7 @@ export default function WorkflowCharts({ workflowRuns }: { workflowRuns: GitHubW
 
   return (
     <div className="py-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 justify-items-center gap-6 gap-y-12">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 justify-items-center gap-6 gap-y-12">
         {charts.map((c) => (
           <ChartCard key={c.key}>
             <Chart kind={c.kind} title={c.title} data={c.data} options={c.options} />
