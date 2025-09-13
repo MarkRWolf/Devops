@@ -13,3 +13,10 @@ Thumbs.db
 # Logs & temp
 *.log
 tmp/
+
+# Terraform sensitive state and var files
+*.tfstate
+*.tfstate.backup
+.terraform/
+terraform.tfvars
+.terraform.lock.hcl
