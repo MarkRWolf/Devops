@@ -16,7 +16,11 @@ resource "azurerm_kubernetes_cluster" "aks" {
     network_plugin    = "azure"
     load_balancer_sku = "standard"
     outbound_type     = "loadBalancer"
-}
+  }
+
+  lifecycle {
+    ignore_changes = [ default_node_pool[0].upgrade_settings]
+  }
 }
 
 resource "azurerm_role_assignment" "aks_acr_pull" {
