@@ -10,6 +10,7 @@ spec:
     metadata:
       labels: { app: backend }
     spec:
+      serviceAccountName: app-sa
       containers:
         - name: backend
           image: saasportfolioreg.azurecr.io/backend:staging
