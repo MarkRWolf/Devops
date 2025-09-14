@@ -1,0 +1,13 @@
+# k8s/certificate.yaml
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: devoptics-tls
+spec:
+  secretName: devoptics-tls
+  issuerRef:
+    name: letsencrypt
+    kind: ClusterIssuer
+  commonName: devoptics.mark-wolf.com
+  dnsNames:
+    - devoptics.mark-wolf.com

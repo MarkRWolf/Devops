@@ -18,17 +18,9 @@ spec:
             - containerPort: 3000
           env:
             - name: DOTNET_API_BASE_URL
-              value: "http://backend:5205/API"
+              value: "https://backend:5205/API"
             - name: NEXT_PUBLIC_SELF_URL
-              value: "https://128.251.90.182"
-          readinessProbe:
-            httpGet: { path: "/", port: 3000 }
-            initialDelaySeconds: 10
-            periodSeconds: 10
-          livenessProbe:
-            httpGet: { path: "/", port: 3000 }
-            initialDelaySeconds: 30
-            periodSeconds: 20
+              value: "https://devoptics.mark-wolf.com"
           resources:
             requests: { cpu: "100m", memory: "128Mi" }
             limits: { cpu: "500m", memory: "512Mi" }

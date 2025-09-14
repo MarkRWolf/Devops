@@ -1,0 +1,35 @@
+# k8s/ingressroute-tls.yaml
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: app-websecure
+spec:
+  entryPoints:
+    - websecure
+  tls:
+    secretName: devoptics-tls
+  routes:
+    - match: Host(`devoptics.mark-wolf.com`) && PathPrefix(`/WS/workflowHub`)
+      kind: Rule
+      middlewares:
+        - name: secure-headers
+      services:
+        - name: backend
+          port: 5205
+
+    - match: Host(`devoptics.mark-wolf.com`) && (PathPrefix(`/API`) || PathPrefix(`/api`))
+      kind: Rule
+      middlewares:
+        - name: ratelimit-api
+        - name: secure-headers
+      services:
+        - name: backend
+          port: 5205
+
+    - match: Host(`devoptics.mark-wolf.com`) && PathPrefix(`/`)
+      kind: Rule
+      middlewares:
+        - name: secure-headers
+      services:
+        - name: frontend
+          port: 3000

@@ -11,14 +11,5 @@ resource "helm_release" "traefik" {
     value = "LoadBalancer"
   }
 
-  set {
-    name  = "additionalArguments[0]"
-    value = "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-  }
-  set {
-    name  = "additionalArguments[1]"
-    value = "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-  }
-
   depends_on = [azurerm_kubernetes_cluster.aks]
 }

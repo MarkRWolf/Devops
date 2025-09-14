@@ -16,15 +16,17 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 5205
+          envFrom:
+            - secretRef:
+                name: app-secrets
           env:
             - name: ASPNETCORE_URLS
               value: "http://+:5205"
-            - name: UseSqliteForTests
-              value: "true"
-          # When ready to use real DB/settings, remove the above and use:
-          # envFrom:
-          #   - secretRef:
-          #       name: app-secrets
+            - name: DP_KEYS_DIR
+              value: "/app/dpkeys"
+          volumeMounts:
+            - name: dpkeys
+              mountPath: /app/dpkeys
           readinessProbe:
             httpGet: { path: /API/health, port: 5205 }
             initialDelaySeconds: 10
@@ -36,6 +38,9 @@ spec:
           resources:
             requests: { cpu: "100m", memory: "128Mi" }
             limits: { cpu: "500m", memory: "512Mi" }
+      volumes:
+        - name: dpkeys
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

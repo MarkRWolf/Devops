@@ -124,7 +124,7 @@ svc.AddCors(options =>
 
     options.AddPolicy(name: "Production",
         builder => builder
-            .WithOrigins("https://webhookrelay.thankfulglacier-8f9db822.northeurope.azurecontainerapps.io", "https://devops.mark-wolf.com")
+            .WithOrigins("https://webhookrelay.thankfulglacier-8f9db822.northeurope.azurecontainerapps.io", "https://devops.mark-wolf.com", "https://devoptics.mark-wolf.com", "https://128.251.90.182")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials());
