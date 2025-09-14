@@ -20,15 +20,20 @@ spec:
       services:
         - name: backend
           port: 5205
+    - match: PathPrefix(`/API`)
+      kind: Rule
       middlewares:
         - name: ratelimit-api
-    - match: PathPrefix(`/API`) || PathPrefix(`/api`)
-      kind: Rule
       services:
         - name: backend
           port: 5205
+    - match: PathPrefix(`/api`)
+      kind: Rule
       middlewares:
         - name: ratelimit-api
+      services:
+        - name: frontend
+          port: 3000
     - match: PathPrefix(`/_next`) || PathPrefix(`/favicon.ico`) || PathPrefix(`/`)
       kind: Rule
       services:

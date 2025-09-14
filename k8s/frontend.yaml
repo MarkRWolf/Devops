@@ -19,6 +19,8 @@ spec:
           env:
             - name: DOTNET_API_BASE_URL
               value: "http://backend:5205/API"
+            - name: NEXT_PUBLIC_SELF_URL
+              value: "https://128.251.90.182"
           readinessProbe:
             httpGet: { path: "/", port: 3000 }
             initialDelaySeconds: 10
