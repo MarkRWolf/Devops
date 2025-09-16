@@ -155,7 +155,7 @@ svc.AddHealthChecks();
 
 var app = builder.Build();
 
-// advanced signalR logging if needed
+// Advanced signalR logging if needed
 /*
 app.Use(async (context, next) =>
 {
