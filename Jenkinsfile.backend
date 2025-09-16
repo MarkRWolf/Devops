@@ -5,15 +5,18 @@ pipeline {
   }
   stages {
     stage('Checkout') { steps { checkout scm } }
+
     stage('Commit Tag') {
       steps {
         script {
-          env.SHORT_SHA  = bat(returnStdout: true, script: '@echo off\r\nfor /f %%i in (\'git rev-parse --short=12 HEAD\') do @echo %%i').trim()
+          def co = checkout(scm)
+          env.SHORT_SHA  = co.GIT_COMMIT.take(12)
           env.IMG_COMMIT = "${env.ACR}/backend:${env.SHORT_SHA}"
           env.IMG_LATEST = "${env.ACR}/backend:staging"
         }
       }
     }
+
     stage('Azure / ACR Login') {
       steps {
         withCredentials([
@@ -28,6 +31,7 @@ pipeline {
         }
       }
     }
+
     stage('Run Tests') {
       steps {
         bat '''
@@ -40,6 +44,7 @@ pipeline {
       }
       post { always { junit 'test-results/test-results.xml' } }
     }
+
     stage('Build Image') {
       steps {
         bat '''
@@ -48,6 +53,7 @@ pipeline {
         '''
       }
     }
+
     stage('Push Image') {
       steps {
         bat '''
@@ -58,6 +64,7 @@ pipeline {
         '''
       }
     }
+
     stage('Deploy to AKS') {
       steps {
         withCredentials([file(credentialsId: 'kubeconfig-aks', variable: 'KUBECONFIG')]) {
