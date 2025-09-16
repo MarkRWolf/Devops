@@ -18,9 +18,34 @@ resource "azurerm_kubernetes_cluster" "aks" {
     outbound_type     = "loadBalancer"
   }
 
+  oidc_issuer_enabled       = true
+  workload_identity_enabled = true
+
+  auto_scaler_profile {
+    balance_similar_node_groups = true
+    expander                    = "random"
+    max_graceful_termination_sec = 600
+    scan_interval               = "10s"
+    scale_down_delay_after_add  = "10m"
+    scale_down_unneeded         = "10m"
+    scale_down_utilization_threshold = "0.5"
+  }
+
   lifecycle {
     ignore_changes = [default_node_pool[0].upgrade_settings]
   }
+}
+
+resource "azurerm_kubernetes_cluster_node_pool" "user" {
+  name                  = "user"
+  kubernetes_cluster_id = azurerm_kubernetes_cluster.aks.id
+  mode                  = "User"
+  vm_size               = "Standard_B2ms"
+  enable_auto_scaling   = "true
+  min_count             = 1
+  max_count             = 5
+  max_pods              = 110
+  node_labels           = { "pool" = "user" }
 }
 
 resource "azurerm_role_assignment" "aks_acr_pull" {

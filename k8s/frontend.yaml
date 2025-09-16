@@ -10,6 +10,8 @@ spec:
     metadata:
       labels: { app: frontend }
     spec:
+      nodeSelector:
+        agentpool: user
       containers:
         - name: frontend
           image: saasportfolioreg.azurecr.io/frontend:staging
@@ -18,7 +20,7 @@ spec:
             - containerPort: 3000
           env:
             - name: DOTNET_API_BASE_URL
-              value: "https://backend:5205/API"
+              value: "http://backend:5205/API"
             - name: NEXT_PUBLIC_SELF_URL
               value: "https://devoptics.mark-wolf.com"
           resources:

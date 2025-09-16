@@ -11,6 +11,8 @@ spec:
       labels: { app: backend }
     spec:
       serviceAccountName: app-sa
+      nodeSelector:
+        agentpool: user
       containers:
         - name: backend
           image: saasportfolioreg.azurecr.io/backend:staging

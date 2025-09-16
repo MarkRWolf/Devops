@@ -16,7 +16,6 @@ spec:
       services:
         - name: backend
           port: 5205
-
     - match: Host(`devoptics.mark-wolf.com`) && (PathPrefix(`/API`) || PathPrefix(`/api`))
       kind: Rule
       middlewares:
@@ -25,7 +24,6 @@ spec:
       services:
         - name: backend
           port: 5205
-
     - match: Host(`devoptics.mark-wolf.com`) && PathPrefix(`/`)
       kind: Rule
       middlewares:
