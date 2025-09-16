@@ -49,10 +49,13 @@ export function makeDotnetProxy(options?: ProxyOptions) {
       return new NextResponse("Internal server error", { status: 500 });
     }
 
+    const outHeaders = copyHeaders(res.headers);
+    outHeaders.set("x-proxied-by", "nextjs");
+
     return new NextResponse(res.body, {
       status: res.status,
       statusText: res.statusText,
-      headers: copyHeaders(res.headers),
+      headers: outHeaders,
     });
   };
 }

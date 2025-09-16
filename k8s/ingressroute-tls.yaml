@@ -16,14 +16,14 @@ spec:
       services:
         - name: backend
           port: 5205
-    - match: Host(`devoptics.mark-wolf.com`) && (PathPrefix(`/API`) || PathPrefix(`/api`))
+    - match: Host(`devoptics.mark-wolf.com`) && (PathPrefix(`/api`))
       kind: Rule
       middlewares:
         - name: ratelimit-api
         - name: secure-headers
       services:
-        - name: backend
-          port: 5205
+        - name: frontend
+          port: 3000
     - match: Host(`devoptics.mark-wolf.com`) && PathPrefix(`/`)
       kind: Rule
       middlewares:
