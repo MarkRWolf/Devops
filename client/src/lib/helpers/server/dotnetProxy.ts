@@ -50,7 +50,6 @@ export function makeDotnetProxy(options?: ProxyOptions) {
     }
 
     const outHeaders = copyHeaders(res.headers);
-    outHeaders.set("x-proxied-by", "nextjs");
 
     return new NextResponse(res.body, {
       status: res.status,
