@@ -11,7 +11,7 @@ pipeline {
     stage('Commit Tag') {
       steps {
         script {
-          def co = checkout(scm)                     // reliable commit from Jenkins
+          def co = checkout(scm)
           env.SHORT_SHA  = co.GIT_COMMIT.take(12)
           env.IMG_COMMIT = "${env.ACR}/frontend:${env.SHORT_SHA}"
           env.IMG_LATEST = "${env.ACR}/frontend:staging"
