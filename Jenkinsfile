@@ -53,6 +53,11 @@ pipeline {
     stage('Push Images') {
       steps {
         bat '''
+          set DOCKER_CONFIG=%WORKSPACE%\\.docker
+          if not exist %DOCKER_CONFIG% mkdir %DOCKER_CONFIG%
+          for /f "delims=" %%A in ('az acr login --name saasportfolioreg --expose-token --output tsv --query accessToken') do set ACR_TOKEN=%%A
+          docker logout saasportfolioreg.azurecr.io >NUL 2>&1
+          docker login saasportfolioreg.azurecr.io -u 00000000-0000-0000-0000-000000000000 -p %ACR_TOKEN%
           docker push %BACKEND_IMG%
           docker push %FRONTEND_IMG%
         '''
