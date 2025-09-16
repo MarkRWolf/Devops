@@ -22,12 +22,12 @@ resource "azurerm_kubernetes_cluster" "aks" {
   workload_identity_enabled = true
 
   auto_scaler_profile {
-    balance_similar_node_groups = true
-    expander                    = "random"
-    max_graceful_termination_sec = 600
-    scan_interval               = "10s"
-    scale_down_delay_after_add  = "10m"
-    scale_down_unneeded         = "10m"
+    balance_similar_node_groups      = true
+    expander                         = "random"
+    max_graceful_termination_sec     = 600
+    scan_interval                    = "10s"
+    scale_down_delay_after_add       = "10m"
+    scale_down_unneeded              = "10m"
     scale_down_utilization_threshold = "0.5"
   }
 
@@ -41,11 +41,12 @@ resource "azurerm_kubernetes_cluster_node_pool" "user" {
   kubernetes_cluster_id = azurerm_kubernetes_cluster.aks.id
   mode                  = "User"
   vm_size               = "Standard_B2ms"
-  enable_auto_scaling   = "true
-  min_count             = 1
-  max_count             = 5
-  max_pods              = 110
   node_labels           = { "pool" = "user" }
+  max_pods              = 110
+
+  auto_scaling_enabled = true
+  min_count            = 1
+  max_count            = 5
 }
 
 resource "azurerm_role_assignment" "aks_acr_pull" {
