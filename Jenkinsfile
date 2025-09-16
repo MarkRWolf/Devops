@@ -36,13 +36,13 @@ pipeline {
           docker build -f Devops/Dockerfile.jenkins -t backend-test --target report .
           docker create --name testcontainer backend-test
           mkdir test-results 2>NUL
-          docker cp testcontainer:/test-results.trx test-results/test-results.trx
+          docker cp testcontainer:/test-results.xml test-results/test-results.xml
           docker rm testcontainer
         '''
       }
       post {
         always {
-          junit 'test-results/test-results.trx'
+          junit 'test-results/test-results.xml'
         }
       }
     }

@@ -9,7 +9,10 @@ ENV UseSqliteForTests=true \
     JwtSettings__Issuer=http://test \
     JwtSettings__Audience=http://test
 
-RUN dotnet test Devops/Devops.sln --logger "trx;LogFileName=test-results.trx"
+RUN dotnet tool install --global trx2junit \
+    && export PATH="$PATH:/root/.dotnet/tools" \
+    && dotnet test Devops/Devops.sln --logger "trx;LogFileName=test-results.trx" \
+    && /root/.dotnet/tools/trx2junit /src/Devops.Tests/TestResults/test-results.trx
 
 # ---------- build stage ----------
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
@@ -27,5 +30,6 @@ ENTRYPOINT ["dotnet", "Devops.dll"]
 
 # ---------- report stage ----------
 FROM alpine AS report
-COPY --from=test /src/Devops.Tests/TestResults/test-results.trx /test-results.trx
+COPY --from=test /src/Devops.Tests/TestResults/test-results.xml /test-results.xml
 CMD ["sleep", "60"]
+
