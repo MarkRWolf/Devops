@@ -2,20 +2,16 @@ pipeline {
   agent any
   environment {
     ACR = 'saasportfolioreg.azurecr.io'
-    NEXT_PUBLIC_SELF_URL = 'https://devoptics.mark-wolf.com'
-    DOTNET_API_BASE_URL = 'http://backend:5205/API'
   }
   stages {
     stage('Checkout') { steps { checkout scm } }
 
-    stage('Compute Commit Tag') {
+    stage('Commit Tag') {
       steps {
         script {
           env.SHORT_SHA = bat(returnStdout: true, script: 'git rev-parse --short=12 HEAD').trim()
-          env.BACKEND_IMG = "${env.ACR}/backend:staging"
-          env.FRONTEND_IMG = "${env.ACR}/frontend:staging"
-          env.BACKEND_IMG_COMMIT = "${env.ACR}/backend:${env.SHORT_SHA}"
-          env.FRONTEND_IMG_COMMIT = "${env.ACR}/frontend:${env.SHORT_SHA}"
+          env.IMG_COMMIT = "${env.ACR}/backend:${env.SHORT_SHA}"
+          env.IMG_LATEST = "${env.ACR}/backend:staging"
           echo "Commit tag: ${env.SHORT_SHA}"
         }
       }
@@ -49,22 +45,16 @@ pipeline {
       post { always { junit 'test-results/test-results.xml' } }
     }
 
-    stage('Build Images') {
+    stage('Build Image') {
       steps {
         bat '''
-          docker build -t %BACKEND_IMG_COMMIT% -f Devops/Dockerfile.jenkins --target runtime .
-          docker tag %BACKEND_IMG_COMMIT% %BACKEND_IMG%
-
-          docker build -t %FRONTEND_IMG_COMMIT% ^
-            --build-arg NEXT_PUBLIC_SELF_URL=%NEXT_PUBLIC_SELF_URL% ^
-            --build-arg DOTNET_API_BASE_URL=%DOTNET_API_BASE_URL% ^
-            -f client/Dockerfile client
-          docker tag %FRONTEND_IMG_COMMIT% %FRONTEND_IMG%
+          docker build -t %IMG_COMMIT% -f Devops/Dockerfile.jenkins --target runtime .
+          docker tag %IMG_COMMIT% %IMG_LATEST%
         '''
       }
     }
 
-    stage('Push Images') {
+    stage('Push Image') {
       steps {
         bat '''
           set DOCKER_CONFIG=%WORKSPACE%\\.docker
@@ -72,23 +62,18 @@ pipeline {
           for /f "delims=" %%A in ('az acr login --name saasportfolioreg --expose-token --output tsv --query accessToken') do set ACR_TOKEN=%%A
           docker logout saasportfolioreg.azurecr.io >NUL 2>&1
           docker login saasportfolioreg.azurecr.io -u 00000000-0000-0000-0000-000000000000 -p %ACR_TOKEN%
-
-          docker push %BACKEND_IMG_COMMIT%
-          docker push %BACKEND_IMG%
-          docker push %FRONTEND_IMG_COMMIT%
-          docker push %FRONTEND_IMG%
+          docker push %IMG_COMMIT%
+          docker push %IMG_LATEST%
         '''
       }
     }
 
-    stage('Deploy to AKS (commit tag)') {
+    stage('Deploy to AKS') {
       steps {
         withCredentials([file(credentialsId: 'kubeconfig-aks', variable: 'KUBECONFIG')]) {
           bat '''
-            kubectl set image deploy/backend backend=%BACKEND_IMG_COMMIT%
-            kubectl set image deploy/frontend frontend=%FRONTEND_IMG_COMMIT%
+            kubectl set image deploy/backend backend=%IMG_COMMIT%
             kubectl rollout status deploy/backend -w
-            kubectl rollout status deploy/frontend -w
           '''
         }
       }
