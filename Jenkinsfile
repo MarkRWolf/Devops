@@ -3,8 +3,8 @@ pipeline {
 
   environment {
     ACR = 'saasportfolioreg.azurecr.io'
-    FRONTEND_IMG = "${ACR}/frontend:staging"
-    BACKEND_IMG = "${ACR}/backend:staging"
+    FRONTEND_IMG = 'saasportfolioreg.azurecr.io/frontend:staging'
+    BACKEND_IMG = 'saasportfolioreg.azurecr.io/backend:staging'
     NEXT_PUBLIC_SELF_URL = 'https://devoptics.mark-wolf.com'
     DOTNET_API_BASE_URL = 'http://backend:5205/API'
   }
@@ -22,8 +22,8 @@ pipeline {
           usernamePassword(credentialsId: 'azure-sp', usernameVariable: 'AZ_CLIENT_ID', passwordVariable: 'AZ_CLIENT_SECRET'),
           string(credentialsId: 'azure-tenant', variable: 'AZ_TENANT')
         ]) {
-          sh '''
-            az login --service-principal -u "$AZ_CLIENT_ID" -p "$AZ_CLIENT_SECRET" --tenant "$AZ_TENANT"
+          bat '''
+            az login --service-principal -u %AZ_CLIENT_ID% -p %AZ_CLIENT_SECRET% --tenant %AZ_TENANT%
             az acr login --name saasportfolioreg
           '''
         }
@@ -32,10 +32,10 @@ pipeline {
 
     stage('Run Tests') {
       steps {
-        sh '''
+        bat '''
           docker build -f Devops/Dockerfile.runtime -t backend-test --target report .
           docker create --name testcontainer backend-test
-          mkdir -p test-results
+          mkdir test-results 2>NUL
           docker cp testcontainer:/test-results.trx test-results/
           docker rm testcontainer
         '''
@@ -49,15 +49,15 @@ pipeline {
 
     stage('Build & Push Images') {
       steps {
-        sh '''
-          docker build -t $BACKEND_IMG -f Devops/Dockerfile.runtime .
-          docker build -t $FRONTEND_IMG \
-            --build-arg NEXT_PUBLIC_SELF_URL=$NEXT_PUBLIC_SELF_URL \
-            --build-arg DOTNET_API_BASE_URL=$DOTNET_API_BASE_URL \
+        bat '''
+          docker build -t %BACKEND_IMG% -f Devops/Dockerfile.runtime .
+          docker build -t %FRONTEND_IMG% ^
+            --build-arg NEXT_PUBLIC_SELF_URL=%NEXT_PUBLIC_SELF_URL% ^
+            --build-arg DOTNET_API_BASE_URL=%DOTNET_API_BASE_URL% ^
             -f Dockerfile .
 
-          docker push $BACKEND_IMG
-          docker push $FRONTEND_IMG
+          docker push %BACKEND_IMG%
+          docker push %FRONTEND_IMG%
         '''
       }
     }
@@ -65,7 +65,7 @@ pipeline {
     stage('Deploy to AKS') {
       steps {
         withCredentials([file(credentialsId: 'kubeconfig-aks', variable: 'KUBECONFIG')]) {
-          sh 'kubectl apply -f k8s/'
+          bat 'kubectl apply -f k8s/'
         }
       }
     }
