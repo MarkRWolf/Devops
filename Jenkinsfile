@@ -33,7 +33,7 @@ pipeline {
     stage('Run Tests') {
       steps {
         bat '''
-          docker build -f Devops/Dockerfile.runtime -t backend-test --target report .
+          docker build -f Devops/Dockerfile -t backend-test --target report .
           docker create --name testcontainer backend-test
           mkdir test-results 2>NUL
           docker cp testcontainer:/test-results.trx test-results/
@@ -50,7 +50,7 @@ pipeline {
     stage('Build & Push Images') {
       steps {
         bat '''
-          docker build -t %BACKEND_IMG% -f Devops/Dockerfile.runtime .
+          docker build -t %BACKEND_IMG% -f Devops/Dockerfile .
           docker build -t %FRONTEND_IMG% ^
             --build-arg NEXT_PUBLIC_SELF_URL=%NEXT_PUBLIC_SELF_URL% ^
             --build-arg DOTNET_API_BASE_URL=%DOTNET_API_BASE_URL% ^
