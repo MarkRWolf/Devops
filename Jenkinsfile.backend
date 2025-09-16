@@ -5,18 +5,15 @@ pipeline {
   }
   stages {
     stage('Checkout') { steps { checkout scm } }
-
     stage('Commit Tag') {
       steps {
         script {
-          env.SHORT_SHA = bat(returnStdout: true, script: 'git rev-parse --short=12 HEAD').trim()
+          env.SHORT_SHA  = bat(returnStdout: true, script: '@echo off\r\nfor /f %%i in (\'git rev-parse --short=12 HEAD\') do @echo %%i').trim()
           env.IMG_COMMIT = "${env.ACR}/backend:${env.SHORT_SHA}"
           env.IMG_LATEST = "${env.ACR}/backend:staging"
-          echo "Commit tag: ${env.SHORT_SHA}"
         }
       }
     }
-
     stage('Azure / ACR Login') {
       steps {
         withCredentials([
@@ -31,7 +28,6 @@ pipeline {
         }
       }
     }
-
     stage('Run Tests') {
       steps {
         bat '''
@@ -44,7 +40,6 @@ pipeline {
       }
       post { always { junit 'test-results/test-results.xml' } }
     }
-
     stage('Build Image') {
       steps {
         bat '''
@@ -53,21 +48,16 @@ pipeline {
         '''
       }
     }
-
     stage('Push Image') {
       steps {
         bat '''
-          set DOCKER_CONFIG=%WORKSPACE%\\.docker
-          if not exist %DOCKER_CONFIG% mkdir %DOCKER_CONFIG%
           for /f "delims=" %%A in ('az acr login --name saasportfolioreg --expose-token --output tsv --query accessToken') do set ACR_TOKEN=%%A
-          docker logout saasportfolioreg.azurecr.io >NUL 2>&1
           docker login saasportfolioreg.azurecr.io -u 00000000-0000-0000-0000-000000000000 -p %ACR_TOKEN%
           docker push %IMG_COMMIT%
           docker push %IMG_LATEST%
         '''
       }
     }
-
     stage('Deploy to AKS') {
       steps {
         withCredentials([file(credentialsId: 'kubeconfig-aks', variable: 'KUBECONFIG')]) {
