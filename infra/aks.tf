@@ -5,9 +5,10 @@ resource "azurerm_kubernetes_cluster" "aks" {
   dns_prefix          = "${local.name}-dns"
 
   default_node_pool {
-    name       = "sys"
-    node_count = 1
-    vm_size    = "Standard_B2ms"
+    name            = "sys"
+    node_count      = 1
+    vm_size         = "Standard_B2s"
+    os_disk_size_gb = 30
   }
 
   identity { type = "SystemAssigned" }
@@ -21,32 +22,9 @@ resource "azurerm_kubernetes_cluster" "aks" {
   oidc_issuer_enabled       = true
   workload_identity_enabled = true
 
-  auto_scaler_profile {
-    balance_similar_node_groups      = true
-    expander                         = "random"
-    max_graceful_termination_sec     = 600
-    scan_interval                    = "10s"
-    scale_down_delay_after_add       = "10m"
-    scale_down_unneeded              = "10m"
-    scale_down_utilization_threshold = "0.5"
-  }
-
   lifecycle {
     ignore_changes = [default_node_pool[0].upgrade_settings]
   }
-}
-
-resource "azurerm_kubernetes_cluster_node_pool" "user" {
-  name                  = "user"
-  kubernetes_cluster_id = azurerm_kubernetes_cluster.aks.id
-  mode                  = "User"
-  vm_size               = "Standard_B2ms"
-  node_labels           = { "pool" = "user" }
-  max_pods              = 110
-
-  auto_scaling_enabled = true
-  min_count            = 1
-  max_count            = 5
 }
 
 resource "azurerm_role_assignment" "aks_acr_pull" {

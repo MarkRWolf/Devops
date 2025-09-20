@@ -5,17 +5,17 @@ metadata:
 spec:
   replicas: 1
   selector:
-    matchLabels: { app: frontend }
+    matchLabels:
+      app: frontend
   template:
     metadata:
-      labels: { app: frontend }
+      labels:
+        app: frontend
     spec:
-      nodeSelector:
-        agentpool: user
       containers:
         - name: frontend
           image: saasportfolioreg.azurecr.io/frontend:staging
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
           env:
@@ -24,15 +24,20 @@ spec:
             - name: NEXT_PUBLIC_SELF_URL
               value: "https://devoptics.mark-wolf.com"
           resources:
-            requests: { cpu: "100m", memory: "128Mi" }
-            limits: { cpu: "500m", memory: "512Mi" }
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: frontend
 spec:
-  selector: { app: frontend }
+  selector:
+    app: frontend
   ports:
     - name: http
       port: 3000

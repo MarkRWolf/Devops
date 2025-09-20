@@ -5,18 +5,18 @@ metadata:
 spec:
   replicas: 1
   selector:
-    matchLabels: { app: backend }
+    matchLabels:
+      app: backend
   template:
     metadata:
-      labels: { app: backend }
+      labels:
+        app: backend
     spec:
       serviceAccountName: app-sa
-      nodeSelector:
-        agentpool: user
       containers:
         - name: backend
           image: saasportfolioreg.azurecr.io/backend:staging
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5205
           envFrom:
@@ -31,16 +31,24 @@ spec:
             - name: dpkeys
               mountPath: /app/dpkeys
           readinessProbe:
-            httpGet: { path: /API/health, port: 5205 }
+            httpGet:
+              path: /API/health
+              port: 5205
             initialDelaySeconds: 10
-            periodSeconds: 10
+            periodSeconds: 15
           livenessProbe:
-            httpGet: { path: /API/health, port: 5205 }
-            initialDelaySeconds: 30
-            periodSeconds: 20
+            httpGet:
+              path: /API/health
+              port: 5205
+            initialDelaySeconds: 45
+            periodSeconds: 30
           resources:
-            requests: { cpu: "100m", memory: "128Mi" }
-            limits: { cpu: "500m", memory: "512Mi" }
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
       volumes:
         - name: dpkeys
           emptyDir: {}
@@ -50,7 +58,8 @@ kind: Service
 metadata:
   name: backend
 spec:
-  selector: { app: backend }
+  selector:
+    app: backend
   ports:
     - name: http
       port: 5205

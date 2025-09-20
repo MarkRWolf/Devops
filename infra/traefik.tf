@@ -10,6 +10,22 @@ resource "helm_release" "traefik" {
     name  = "service.type"
     value = "LoadBalancer"
   }
+  set {
+    name  = "resources.requests.cpu"
+    value = "50m"
+  }
+  set {
+    name  = "resources.requests.memory"
+    value = "64Mi"
+  }
+  set {
+    name  = "resources.limits.cpu"
+    value = "250m"
+  }
+  set {
+    name  = "resources.limits.memory"
+    value = "256Mi"
+  }
 
   depends_on = [azurerm_kubernetes_cluster.aks]
 }
