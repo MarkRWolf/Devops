@@ -1,0 +1,101 @@
+pipeline {
+  agent any
+
+  environment {
+    ACR                 = 'saasportfolioreg.azurecr.io'
+    NEXT_PUBLIC_SELF_URL= 'https://devoptics.mark-wolf.com'
+    DOTNET_API_BASE_URL = 'http://backend:5205/API'
+  }
+
+  stages {
+    stage('Checkout') { steps { checkout scm } }
+
+    stage('Compute Commit Tag') {
+      steps {
+        script {
+          env.SHORT_SHA          = sh(returnStdout: true, script: 'git rev-parse --short=12 HEAD').trim()
+          env.BACKEND_IMG        = "${env.ACR}/backend:staging"
+          env.FRONTEND_IMG       = "${env.ACR}/frontend:staging"
+          env.BACKEND_IMG_COMMIT = "${env.ACR}/backend:${env.SHORT_SHA}"
+          env.FRONTEND_IMG_COMMIT= "${env.ACR}/frontend:${env.SHORT_SHA}"
+          echo "Commit tag: ${env.SHORT_SHA}"
+        }
+      }
+    }
+
+    stage('Azure / ACR Login') {
+      steps {
+        withCredentials([
+          usernamePassword(credentialsId: 'azure-sp', usernameVariable: 'AZ_CLIENT_ID', passwordVariable: 'AZ_CLIENT_SECRET'),
+          string(credentialsId: 'azure-tenant', variable: 'AZ_TENANT')
+        ]) {
+          sh '''
+            set -e
+            az login --service-principal -u "$AZ_CLIENT_ID" -p "$AZ_CLIENT_SECRET" --tenant "$AZ_TENANT"
+            ACR_TOKEN=$(az acr login --name saasportfolioreg --expose-token --output tsv --query accessToken)
+            echo "$ACR_TOKEN" | docker login saasportfolioreg.azurecr.io -u 00000000-0000-0000-0000-000000000000 --password-stdin
+          '''
+        }
+      }
+    }
+
+    stage('Run Tests') {
+      steps {
+        sh '''
+          set -e
+          docker build -f Devops/Dockerfile.jenkins -t backend-test --target report .
+          CID=$(docker create backend-test)
+          mkdir -p test-results
+          docker cp "$CID":/test-results.xml test-results/test-results.xml
+          docker rm "$CID"
+        '''
+      }
+      post { always { junit 'test-results/test-results.xml' } }
+    }
+
+    stage('Build Images') {
+      steps {
+        sh '''
+          set -e
+          docker build -t "$BACKEND_IMG_COMMIT" -f Devops/Dockerfile.jenkins --target runtime .
+          docker tag "$BACKEND_IMG_COMMIT" "$BACKEND_IMG"
+
+          docker build -t "$FRONTEND_IMG_COMMIT" \
+            --build-arg NEXT_PUBLIC_SELF_URL="$NEXT_PUBLIC_SELF_URL" \
+            --build-arg DOTNET_API_BASE_URL="$DOTNET_API_BASE_URL" \
+            -f client/Dockerfile client
+          docker tag "$FRONTEND_IMG_COMMIT" "$FRONTEND_IMG"
+        '''
+      }
+    }
+
+    stage('Push Images') {
+      steps {
+        sh '''
+          set -e
+          ACR_TOKEN=$(az acr login --name saasportfolioreg --expose-token --output tsv --query accessToken)
+          echo "$ACR_TOKEN" | docker login saasportfolioreg.azurecr.io -u 00000000-0000-0000-0000-000000000000 --password-stdin
+
+          docker push "$BACKEND_IMG_COMMIT"
+          docker push "$BACKEND_IMG"
+          docker push "$FRONTEND_IMG_COMMIT"
+          docker push "$FRONTEND_IMG"
+        '''
+      }
+    }
+
+    stage('Deploy to AKS (commit tag)') {
+      steps {
+        withCredentials([file(credentialsId: 'kubeconfig-aks', variable: 'KUBECONFIG')]) {
+          sh '''
+            set -e
+            kubectl set image deploy/backend  backend="$BACKEND_IMG_COMMIT"
+            kubectl set image deploy/frontend frontend="$FRONTEND_IMG_COMMIT"
+            kubectl rollout status deploy/backend -w
+            kubectl rollout status deploy/frontend -w
+          '''
+        }
+      }
+    }
+  }
+}
