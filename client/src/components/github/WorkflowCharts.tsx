@@ -144,7 +144,9 @@ export default function WorkflowCharts({ workflowRuns }: { workflowRuns: GitHubW
     acc[ev] = (acc[ev] || 0) + 1;
     return acc;
   }, {});
+
   const eventLabels = Object.keys(eventCounts);
+
   const eventData = {
     labels: eventLabels,
     datasets: [
@@ -155,6 +157,7 @@ export default function WorkflowCharts({ workflowRuns }: { workflowRuns: GitHubW
       },
     ],
   };
+  
   const eventOpts: ChartOptions<"bar"> = {
     responsive: true,
     maintainAspectRatio: false,
