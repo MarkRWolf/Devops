@@ -145,7 +145,7 @@ export default function WorkflowCharts({ workflowRuns }: { workflowRuns: GitHubW
     return acc;
   }, {});
   const eventLabels = Object.keys(eventCounts);
-  const eventData = {
+  /* const eventData = {
     labels: eventLabels,
     datasets: [
       {
@@ -154,7 +154,7 @@ export default function WorkflowCharts({ workflowRuns }: { workflowRuns: GitHubW
         backgroundColor: eventLabels.map(() => "#3b82f6"),
       },
     ],
-  };
+  }; */
   const eventOpts: ChartOptions<"bar"> = {
     responsive: true,
     maintainAspectRatio: false,
