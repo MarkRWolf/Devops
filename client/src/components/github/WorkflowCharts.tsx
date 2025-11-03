@@ -139,13 +139,13 @@ export default function WorkflowCharts({ workflowRuns }: { workflowRuns: GitHubW
   };
 
   // Event type bar
-  const eventCounts = workflowRuns.reduce<Record<string, number>>((acc, r) => {
+/*   const eventCounts = workflowRuns.reduce<Record<string, number>>((acc, r) => {
     const ev = r.event || "unknown";
     acc[ev] = (acc[ev] || 0) + 1;
     return acc;
   }, {});
   const eventLabels = Object.keys(eventCounts);
-  /* const eventData = {
+  const eventData = {
     labels: eventLabels,
     datasets: [
       {
@@ -154,7 +154,7 @@ export default function WorkflowCharts({ workflowRuns }: { workflowRuns: GitHubW
         backgroundColor: eventLabels.map(() => "#3b82f6"),
       },
     ],
-  }; */
+  };
   const eventOpts: ChartOptions<"bar"> = {
     responsive: true,
     maintainAspectRatio: false,
@@ -166,7 +166,7 @@ export default function WorkflowCharts({ workflowRuns }: { workflowRuns: GitHubW
       x: { ticks: { color: textColor } },
       y: { ticks: { color: textColor }, beginAtZero: true },
     },
-  };
+  }; */
 
   const charts = [
     {
