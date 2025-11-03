@@ -197,13 +197,13 @@ export default function WorkflowCharts({ workflowRuns }: { workflowRuns: GitHubW
       data: durData,
       options: durOpts,
     },
-    {
+    /* {
       key: "event",
       kind: "bar" as const,
       title: "Runs by Event Type",
       data: eventData,
       options: eventOpts,
-    },
+    }, */
   ];
 
   return (
