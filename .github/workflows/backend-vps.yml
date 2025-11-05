@@ -22,12 +22,16 @@ jobs:
 
       - name: Build report image and extract test results
         run: |
+          sudo rm -rf ./test-report-out
+
           sudo nerdctl --address /run/k3s/containerd/containerd.sock -n k8s.io build \
             -f Devops/Dockerfile.jenkins \
             --target report \
             --output type=local,dest=./test-report-out \
             .
-          ls -R
+
+          sudo chown -R $(id -u):$(id -g) ./test-report-out
+
           test -f test-report-out/test-results.xml
 
       - name: Upload backend test report
