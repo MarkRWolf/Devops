@@ -2,7 +2,7 @@ name: Build & Deploy - CLIENT -> ACA
 
 on:
   push:
-    branches: [ghfrontend]
+    # branches: [ghfrontend]
 
 jobs:
   build-client:

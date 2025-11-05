@@ -2,7 +2,7 @@ name: Build & Deploy - BACKEND - ACA
 
 on:
   push:
-    branches: [ghbackend]
+    # branches: [ghbackend]
 
 jobs:
   build-server:
