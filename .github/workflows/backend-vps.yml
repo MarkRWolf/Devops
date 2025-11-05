@@ -1,0 +1,52 @@
+name: Build & Deploy - BACKEND - VPS
+
+on:
+  push:
+    branches:
+      - ghbackend
+
+jobs:
+  backend:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compute commit tag
+        run: echo "SHORT_SHA=$(git rev-parse --short=12 HEAD)" >> $GITHUB_ENV
+
+      - name: Run backend tests in container
+        run: |
+          sudo nerdctl --address /run/k3s/containerd/containerd.sock --namespace k8s.io build \
+            -f Devops/Dockerfile.jenkins \
+            --target report \
+            -t backend-test:$SHORT_SHA .
+          CID=$(sudo nerdctl --address /run/k3s/containerd/containerd.sock --namespace k8s.io create backend-test:$SHORT_SHA)
+          mkdir -p test-results
+          sudo nerdctl --address /run/k3s/containerd/containerd.sock --namespace k8s.io cp "$CID":/test-results.xml test-results/test-results.xml
+          sudo nerdctl --address /run/k3s/containerd/containerd.sock --namespace k8s.io rm "$CID"
+
+      - name: Upload backend test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results-${{ env.SHORT_SHA }}
+          path: test-results/test-results.xml
+
+      - name: Build backend runtime image
+        run: |
+          sudo nerdctl --address /run/k3s/containerd/containerd.sock --namespace k8s.io build \
+            -f Devops/Dockerfile.jenkins \
+            --target runtime \
+            -t backend:$SHORT_SHA .
+          sudo nerdctl --address /run/k3s/containerd/containerd.sock --namespace k8s.io tag backend:$SHORT_SHA backend:local
+
+      - name: Deploy backend to k3s
+        run: |
+          sudo k3s kubectl set image deploy/backend backend=backend:$SHORT_SHA
+          sudo k3s kubectl rollout status deploy/backend -w
