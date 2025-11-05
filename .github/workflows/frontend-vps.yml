@@ -1,5 +1,4 @@
 name: Build & Deploy - FRONTEND - VPS
-
 on:
   push:
     branches:
