@@ -1,4 +1,5 @@
 name: Build & Deploy - BACKEND - VPS
+
 on:
   push:
     branches:
@@ -15,19 +16,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          clean: false
 
       - name: Compute commit tag
         run: echo "SHORT_SHA=$(git rev-parse --short=12 HEAD)" >> $GITHUB_ENV
 
       - name: Build report image and extract test results
         run: |
-          rm -rf ./test-report-out
+          sudo rm -rf ./test-report-out
 
-          nerdctl --address /run/k3s/containerd/containerd.sock -n k8s.io build \
+          sudo nerdctl --address /run/k3s/containerd/containerd.sock -n k8s.io build \
             -f Devops/Dockerfile.jenkins \
             --target report \
             --output type=local,dest=./test-report-out \
             .
+
+          sudo chown -R $(id -u):$(id -g) ./test-report-out
 
           ls -l test-report-out
           test -f test-report-out/test-results.xml
@@ -41,11 +46,11 @@ jobs:
 
       - name: Build backend runtime image
         run: |
-          nerdctl --address /run/k3s/containerd/containerd.sock -n k8s.io build \
+          sudo nerdctl --address /run/k3s/containerd/containerd.sock -n k8s.io build \
             -f Devops/Dockerfile.jenkins \
             --target runtime \
             -t backend:$SHORT_SHA .
-          nerdctl --address /run/k3s/containerd/containerd.sock -n k8s.io tag backend:$SHORT_SHA backend:local
+          sudo nerdctl --address /run/k3s/containerd/containerd.sock -n k8s.io tag backend:$SHORT_SHA backend:local
 
       - name: Deploy backend to k3s
         run: |
