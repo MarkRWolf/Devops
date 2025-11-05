@@ -1,4 +1,5 @@
 name: Build & Deploy - BACKEND - VPS
+
 on:
   push:
     branches:
@@ -23,35 +24,31 @@ jobs:
 
       - name: Build report image and extract test results
         run: |
-          sudo rm -rf ./test-report-out
-
-          sudo nerdctl --address /run/k3s/containerd/containerd.sock -n k8s.io build \
+          sudo /usr/local/bin/nerdctl --address /run/k3s/containerd/containerd.sock -n k8s.io build \
             -f Devops/Dockerfile.jenkins \
             --target report \
-            --output type=local,dest=./test-report-out \
+            --output type=local,dest=/opt/ci-test-reports/backend \
             .
 
-          sudo chown -R $(id -u):$(id -g) ./test-report-out
-
-          ls -l test-report-out
-          test -f test-report-out/test-results.xml
+          ls -l /opt/ci-test-reports/backend
+          test -f /opt/ci-test-reports/backend/test-results.xml
 
       - name: Upload backend test report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: backend-test-results-${{ env.SHORT_SHA }}
-          path: test-report-out/test-results.xml
+          path: /opt/ci-test-reports/backend/test-results.xml
 
       - name: Build backend runtime image
         run: |
-          sudo nerdctl --address /run/k3s/containerd/containerd.sock -n k8s.io build \
+          sudo /usr/local/bin/nerdctl --address /run/k3s/containerd/containerd.sock -n k8s.io build \
             -f Devops/Dockerfile.jenkins \
             --target runtime \
             -t backend:$SHORT_SHA .
-          sudo nerdctl --address /run/k3s/containerd/containerd.sock -n k8s.io tag backend:$SHORT_SHA backend:local
+          sudo /usr/local/bin/nerdctl --address /run/k3s/containerd/containerd.sock -n k8s.io tag backend:$SHORT_SHA backend:local
 
       - name: Deploy backend to k3s
         run: |
-          sudo k3s kubectl set image deploy/backend backend=backend:$SHORT_SHA
-          sudo k3s kubectl rollout status deploy/backend -w
+          sudo /usr/local/bin/k3s kubectl set image deploy/backend backend=backend:$SHORT_SHA
+          sudo /usr/local/bin/k3s kubectl rollout status deploy/backend -w
