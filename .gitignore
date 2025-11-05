@@ -21,3 +21,5 @@ tmp/
 tfplan
 terraform.tfvars
 .terraform.lock.hcl
+
+workflowz/
