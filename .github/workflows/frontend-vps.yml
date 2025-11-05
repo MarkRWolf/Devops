@@ -22,12 +22,6 @@ jobs:
       - name: Compute commit tag
         run: echo "SHORT_SHA=$(git rev-parse --short=12 HEAD)" >> $GITHUB_ENV
 
-      - name: Install deps and build frontend
-        working-directory: client
-        run: |
-          npm ci
-          npm run build
-
       - name: Build frontend image
         run: |
           sudo /usr/local/bin/nerdctl --address /run/k3s/containerd/containerd.sock -n k8s.io build \
