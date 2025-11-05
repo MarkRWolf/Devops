@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          clean: false
 
       - name: Compute commit tag
         run: echo "SHORT_SHA=$(git rev-parse --short=12 HEAD)" >> $GITHUB_ENV
@@ -28,14 +30,15 @@ jobs:
 
       - name: Build frontend image
         run: |
-          sudo nerdctl --address /run/k3s/containerd/containerd.sock -n k8s.io build \
+          sudo /usr/local/bin/nerdctl --address /run/k3s/containerd/containerd.sock -n k8s.io build \
             --build-arg NEXT_PUBLIC_SELF_URL=${{ secrets.NEXT_PUBLIC_SELF_URL }} \
             --build-arg DOTNET_API_BASE_URL=${{ secrets.DOTNET_API_BASE_URL }} \
             -t frontend:$SHORT_SHA \
             -f client/Dockerfile client
-          sudo nerdctl --address /run/k3s/containerd/containerd.sock -n k8s.io tag frontend:$SHORT_SHA frontend:local
+
+          sudo /usr/local/bin/nerdctl --address /run/k3s/containerd/containerd.sock -n k8s.io tag frontend:$SHORT_SHA frontend:local
 
       - name: Deploy frontend to k3s
         run: |
-          sudo k3s kubectl set image deploy/frontend frontend=frontend:$SHORT_SHA
-          sudo k3s kubectl rollout status deploy/frontend -w
+          sudo /usr/local/bin/k3s kubectl set image deploy/frontend frontend=frontend:$SHORT_SHA
+          sudo /usr/local/bin/k3s kubectl rollout status deploy/frontend -w
