@@ -22,16 +22,15 @@ jobs:
 
       - name: Build report image and extract test results
         run: |
-          sudo rm -rf ./test-report-out
+          rm -rf ./test-report-out
 
-          sudo nerdctl --address /run/k3s/containerd/containerd.sock -n k8s.io build \
+          nerdctl --address /run/k3s/containerd/containerd.sock -n k8s.io build \
             -f Devops/Dockerfile.jenkins \
             --target report \
             --output type=local,dest=./test-report-out \
             .
 
-          sudo chown -R $(id -u):$(id -g) ./test-report-out
-
+          ls -l test-report-out
           test -f test-report-out/test-results.xml
 
       - name: Upload backend test report
@@ -43,11 +42,11 @@ jobs:
 
       - name: Build backend runtime image
         run: |
-          sudo nerdctl --address /run/k3s/containerd/containerd.sock -n k8s.io build \
+          nerdctl --address /run/k3s/containerd/containerd.sock -n k8s.io build \
             -f Devops/Dockerfile.jenkins \
             --target runtime \
             -t backend:$SHORT_SHA .
-          sudo nerdctl --address /run/k3s/containerd/containerd.sock -n k8s.io tag backend:$SHORT_SHA backend:local
+          nerdctl --address /run/k3s/containerd/containerd.sock -n k8s.io tag backend:$SHORT_SHA backend:local
 
       - name: Deploy backend to k3s
         run: |
