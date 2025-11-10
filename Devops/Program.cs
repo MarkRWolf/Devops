@@ -32,9 +32,15 @@ svc.AddDbContext<DevopsDb>(opt =>
 });
 
 // ───── IDENTITY ──────────────────────────────
-svc.AddIdentityCore<DevopsUser>(o => o.Password.RequireNonAlphanumeric = false)
-   .AddRoles<IdentityRole<Guid>>()
-   .AddEntityFrameworkStores<DevopsDb>();
+svc.AddIdentityCore<DevopsUser>(o =>
+{
+    o.Password.RequireNonAlphanumeric = false;
+    o.SignIn.RequireConfirmedAccount = true;
+})
+.AddRoles<IdentityRole<Guid>>()
+.AddEntityFrameworkStores<DevopsDb>()
+.AddDefaultTokenProviders();
+
 
 // ───── DATA PROTECTION ───────────────────────
 var blobUri = cfg["AzureBlob:KeyUri"];
@@ -139,6 +145,9 @@ svc.AddScoped<IAuthService, AuthService>();
 svc.AddScoped<IPatService, PatService>();
 svc.AddScoped<IGitHubService, GitHubService>();
 svc.AddScoped<IAzureDevOpsService, AzureDevOpsService>();
+
+svc.AddTransient<IEmailSender, BrevoEmailSender>();
+
 svc.AddHttpClient();
 svc.AddHttpClient("github")
    .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler

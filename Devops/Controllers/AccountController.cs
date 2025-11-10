@@ -1,5 +1,6 @@
 ﻿namespace Devops.Controllers;
 
+using System.Net;
 using Devops.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,14 +26,42 @@ public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEn
     };
 
 
-    [HttpPost("signup")]
-    public async Task<IActionResult> Register([FromBody] SignupReq r)
+[HttpPost("signup")]
+    public async Task<IActionResult> Register([FromBody] SignupReq r, [FromServices] IEmailSender email)
     {
         var res = await auth.RegisterAsync(r.Email, r.Password, r.Username);
         if (!res.Success || res.User is null)
-            return Conflict(new { errors = res.Errors });  
-        Response.Cookies.Append("DevopsUserToken", res.Token!, CookieOpts(env));
-        return StatusCode(201, new { res.User, Message = "User registered successfully." });
+            return Conflict(new { errors = res.Errors });
+
+        var user = await userManager.FindByEmailAsync(r.Email);
+        if (user == null)
+            return BadRequest("User creation failed.");
+
+        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+        var encoded = WebUtility.UrlEncode(token);
+
+        var apiBase = cfg["App:ApiBaseUrl"] ?? $"{Request.Scheme}://{Request.Host}";
+        var confirmUrl = $"{apiBase}/API/account/confirm-email?userId={user.Id}&token={encoded}";
+
+        var body = $"Click <a href=\"{confirmUrl}\">here</a> to confirm your email.";
+        await email.SendAsync(user.Email!, "Confirm your email", body);
+
+        return StatusCode(201, new { res.User, Message = "User registered. Check your email to confirm your account." });
+    }
+
+    [HttpGet("confirm-email")]
+    public async Task<IActionResult> ConfirmEmail(Guid userId, string token)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user == null)
+            return NotFound("User not found.");
+
+        var result = await userManager.ConfirmEmailAsync(user, token);
+
+        if (!result.Succeeded)
+            return BadRequest("Invalid or expired token.");
+
+        return Ok(new { Message = "Email confirmed successfully." });
     }
 
 

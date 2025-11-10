@@ -2,6 +2,10 @@
 bin/
 obj/
 vs/
+
+# Local DB files
+*.db*
+
 # Visual Studio files
 
 *.user
