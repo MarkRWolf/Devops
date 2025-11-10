@@ -3,6 +3,8 @@ bin/
 obj/
 vs/
 
+Migrations/
+
 # Local DB files
 *.db*
 

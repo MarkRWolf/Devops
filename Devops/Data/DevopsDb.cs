@@ -15,7 +15,7 @@ public class DevopsDb : IdentityDbContext<DevopsUser, IdentityRole<Guid>, Guid>
         b.Entity<DevopsUser>(u =>
         {
             u.Property(e => e.Email).IsRequired();
-            u.HasIndex(e => e.Email).IsUnique();
+            u.HasIndex(e => e.NormalizedEmail).IsUnique();
             u.Property(e => e.UserName).IsRequired();
         });
     }

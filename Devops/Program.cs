@@ -36,6 +36,7 @@ svc.AddIdentityCore<DevopsUser>(o =>
 {
     o.Password.RequireNonAlphanumeric = false;
     o.SignIn.RequireConfirmedAccount = true;
+    o.User.RequireUniqueEmail = true;
 })
 .AddRoles<IdentityRole<Guid>>()
 .AddEntityFrameworkStores<DevopsDb>()
