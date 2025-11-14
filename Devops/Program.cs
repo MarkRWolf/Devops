@@ -219,8 +219,11 @@ app.MapHealthChecks("/API/health");
 app.MapHub<WorkflowHub>("/WS/workflowHub")
     .RequireCors(app.Environment.IsDevelopment() ? "Local" : "Production");
 
+
 app.UseHttpMetrics();
 app.MapMetrics();
+
+app.MapGet("/error", () => throw new Exception("Test 500"));
 
 app.MapControllers();
 
