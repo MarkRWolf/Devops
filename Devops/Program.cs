@@ -223,7 +223,7 @@ app.MapHub<WorkflowHub>("/WS/workflowHub")
 app.UseHttpMetrics();
 app.MapMetrics();
 
-app.MapGet("/error", () => throw new Exception("Test 500"));
+app.MapGet("/error", (HttpContext ctx) => throw new Exception("Test 500"));
 
 app.MapControllers();
 
