@@ -2,6 +2,11 @@
 bin/
 obj/
 vs/
+
+Migrations/*
+
+devops.db
+
 # Visual Studio files
 
 *.user
