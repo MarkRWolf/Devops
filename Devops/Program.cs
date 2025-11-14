@@ -12,6 +12,7 @@ using System.Text.Json;
 using Azure.Identity;
 using Devops.Hubs;
 using System.Net;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 var cfg = builder.Configuration;
@@ -218,7 +219,11 @@ app.MapHealthChecks("/API/health");
 app.MapHub<WorkflowHub>("/WS/workflowHub")
     .RequireCors(app.Environment.IsDevelopment() ? "Local" : "Production");
 
+app.UseHttpMetrics();
+app.MapMetrics();
+
 app.MapControllers();
+
 
 app.Run();
 
