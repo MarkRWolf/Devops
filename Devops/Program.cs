@@ -28,6 +28,19 @@ var svc = builder.Services;
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
+builder.Logging.AddOpenTelemetry(options =>
+{
+    options.SetResourceBuilder(ResourceBuilder.CreateDefault()
+        .AddService(
+            builder.Configuration["OTel:ServiceName"] ?? "devops-backend",
+            serviceVersion: builder.Configuration["OTel:ServiceVersion"] ?? "1.0.0"
+        )
+    );
+
+    var otelCollector = Environment.GetEnvironmentVariable("OTEL_COLLECTOR_ENDPOINT");
+    if (!string.IsNullOrWhiteSpace(otelCollector))
+        options.AddOtlpExporter(o => o.Endpoint = new Uri(otelCollector));
+});
 
 // ───── DATABASE ──────────────────────────────
 svc.AddDbContext<DevopsDb>(opt =>
