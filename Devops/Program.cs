@@ -13,6 +13,12 @@ using Azure.Identity;
 using Devops.Hubs;
 using System.Net;
 using Prometheus;
+using OpenTelemetry;
+using OpenTelemetry.Trace;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Instrumentation.SqlClient;
 
 var builder = WebApplication.CreateBuilder(args);
 var cfg = builder.Configuration;
@@ -153,6 +159,42 @@ svc.AddControllers()
    .AddJsonOptions(o => o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
 
 svc.AddHealthChecks();
+
+// ───── OpenTelemetry ─────────────────
+var otelCollector = Environment.GetEnvironmentVariable("OTEL_COLLECTOR_ENDPOINT");
+var serviceName = cfg["OTel:ServiceName"] ?? "devops-backend";
+var serviceVersion = cfg["OTel:ServiceVersion"] ?? "1.0.0";
+
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracerProviderBuilder =>
+    {
+        tracerProviderBuilder
+            .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName, serviceVersion: serviceVersion))
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddSqlClientInstrumentation();
+
+        if (!string.IsNullOrWhiteSpace(otelCollector))
+            tracerProviderBuilder.AddOtlpExporter(o => o.Endpoint = new Uri(otelCollector));
+    })
+    .WithMetrics(meterProviderBuilder =>
+    {
+        meterProviderBuilder
+            .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName, serviceVersion: serviceVersion))
+            .AddAspNetCoreInstrumentation()
+            .AddRuntimeInstrumentation();
+
+        if (!string.IsNullOrWhiteSpace(otelCollector))
+            meterProviderBuilder.AddOtlpExporter(o => o.Endpoint = new Uri(otelCollector));
+    })
+    .WithLogging(loggingBuilder =>
+    {
+        loggingBuilder
+            .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName, serviceVersion: serviceVersion));
+
+        if (!string.IsNullOrWhiteSpace(otelCollector))
+            loggingBuilder.AddOtlpExporter(o => o.Endpoint = new Uri(otelCollector));
+    });
 
 var app = builder.Build();
 
