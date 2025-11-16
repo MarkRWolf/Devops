@@ -175,7 +175,7 @@ builder.Services.AddOpenTelemetry()
           .AddOtlpExporter(options =>
         {
             options.Endpoint = new Uri(otelBase + "/v1/traces");
-        }))
+        });
     })
     .WithMetrics(mp =>
     {
@@ -186,8 +186,8 @@ builder.Services.AddOpenTelemetry()
           .AddHttpClientInstrumentation()
           .AddOtlpExporter(options =>
         {
-            options.Endpoint = new Uri(otelBase + "/v1/traces");
-        }))
+            options.Endpoint = new Uri(otelBase + "/v1/metrics");
+        });
     });
 
 builder.Logging.AddOpenTelemetry(o =>
@@ -195,13 +195,11 @@ builder.Logging.AddOpenTelemetry(o =>
     o.SetResourceBuilder(ResourceBuilder.CreateDefault()
         .AddService(cfg["OTel:ServiceName"] ?? "devops-backend", serviceVersion: cfg["OTel:ServiceVersion"] ?? "1.0.0"));
     o.IncludeScopes = true;
-    .AddOtlpExporter(options =>
-        {
-            options.Endpoint = new Uri("your-endpoint-here/v1/traces");
-        }))
+    o.AddOtlpExporter(options =>
+    {
+        options.Endpoint = new Uri(otelBase + "/v1/traces");
+    });
 });
-
-builder.services.Configuration(
 
 
 var app = builder.Build();
