@@ -42,7 +42,7 @@ builder.Logging.AddOpenTelemetry(options =>
         options.AddOtlpExporter(o =>
         {
             o.Endpoint = new Uri(otelCollector);
-            o.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
+            o.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
         });
 });
 
