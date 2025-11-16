@@ -30,9 +30,6 @@ builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
 
-var otelBase = cfg["OTEL_COLLECTOR_ENDPOINT"] ?? "http://otel-collector:4318";
-
-
 // ───── DATABASE ──────────────────────────────
 svc.AddDbContext<DevopsDb>(opt =>
 {
@@ -165,6 +162,7 @@ svc.AddControllers()
 svc.AddHealthChecks();
 
 // ───── OpenTelemetry ─────────────────
+var otelBase = cfg["OTEL_COLLECTOR_ENDPOINT"] ?? "http://otel-collector:4318";
 
 builder.Services.AddOpenTelemetry()
     .WithTracing(tp =>
@@ -174,11 +172,10 @@ builder.Services.AddOpenTelemetry()
           .AddAspNetCoreInstrumentation()
           .AddHttpClientInstrumentation()
           .AddSqlClientInstrumentation()
-          .AddOtlpExporter(o =>
-          {
-              o.Endpoint = new Uri(otelBase.TrimEnd('/') + "/v1/traces");
-              o.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
-          });
+          .AddOtlpExporter(options =>
+        {
+            options.Endpoint = new Uri(otelBase + "/v1/traces");
+        }))
     })
     .WithMetrics(mp =>
     {
@@ -186,11 +183,11 @@ builder.Services.AddOpenTelemetry()
                 .AddService(cfg["OTel:ServiceName"] ?? "devops-backend", serviceVersion: cfg["OTel:ServiceVersion"] ?? "1.0.0"))
           .AddAspNetCoreInstrumentation()
           .AddRuntimeInstrumentation()
-          .AddOtlpExporter(o =>
-          {
-              o.Endpoint = new Uri(otelBase.TrimEnd('/') + "/v1/metrics");
-              o.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
-          });
+          .AddHttpClientInstrumentation()
+          .AddOtlpExporter(options =>
+        {
+            options.Endpoint = new Uri(otelBase + "/v1/traces");
+        }))
     });
 
 builder.Logging.AddOpenTelemetry(o =>
@@ -198,13 +195,13 @@ builder.Logging.AddOpenTelemetry(o =>
     o.SetResourceBuilder(ResourceBuilder.CreateDefault()
         .AddService(cfg["OTel:ServiceName"] ?? "devops-backend", serviceVersion: cfg["OTel:ServiceVersion"] ?? "1.0.0"));
     o.IncludeScopes = true;
-    o.ParseStateValues = true;
-    o.AddOtlpExporter(opt =>
-    {
-        opt.Endpoint = new Uri(otelBase.TrimEnd('/') + "/v1/logs");
-        opt.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
-    });
+    .AddOtlpExporter(options =>
+        {
+            options.Endpoint = new Uri("your-endpoint-here/v1/traces");
+        }))
 });
+
+builder.services.Configuration(
 
 
 var app = builder.Build();
