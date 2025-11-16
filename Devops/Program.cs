@@ -25,10 +25,10 @@ var cfg = builder.Configuration;
 var svc = builder.Services;
 
 // ───── LOGGING ─────────────────────────────────
-// builder.Logging.AddConsole();
-// builder.Logging.AddDebug();
-
 builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
 
 var otelBase = cfg["OTEL_COLLECTOR_ENDPOINT"] ?? "http://otel-collector:4318";
 
@@ -41,7 +41,7 @@ builder.Logging.AddOpenTelemetry(options =>
     options.AddOtlpExporter(opt =>
     {
         opt.Endpoint = new Uri(otelBase.TrimEnd('/') + "/v1/logs");
-        opt.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+        opt.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
     });
 });
 
@@ -190,7 +190,7 @@ builder.Services.AddOpenTelemetry()
           .AddOtlpExporter(o =>
           {
               o.Endpoint = new Uri(otelBase.TrimEnd('/') + "/v1/traces");
-              o.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+              o.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
           });
     })
     .WithMetrics(mp =>
@@ -202,7 +202,7 @@ builder.Services.AddOpenTelemetry()
           .AddOtlpExporter(o =>
           {
               o.Endpoint = new Uri(otelBase.TrimEnd('/') + "/v1/metrics");
-              o.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+              o.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
           });
     });
 
@@ -215,7 +215,7 @@ builder.Logging.AddOpenTelemetry(o =>
     o.AddOtlpExporter(opt =>
     {
         opt.Endpoint = new Uri(otelBase.TrimEnd('/') + "/v1/logs");
-        opt.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+        opt.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
     });
 });
 
