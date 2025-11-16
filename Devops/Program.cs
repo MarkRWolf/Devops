@@ -197,6 +197,8 @@ builder.Logging.AddOpenTelemetry(o =>
     o.SetResourceBuilder(ResourceBuilder.CreateDefault()
         .AddService(cfg["OTel:ServiceName"] ?? "devops-backend", serviceVersion: cfg["OTel:ServiceVersion"] ?? "1.0.0"));
     o.IncludeScopes = true;
+    o.IncludeFormattedMessage = true;
+    o.ParseStateValues = true;
     o.AddOtlpExporter(options =>
     {
         options.Endpoint = new Uri(otelBase + "/v1/logs");
