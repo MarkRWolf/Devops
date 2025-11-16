@@ -29,6 +29,8 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
+builder.Logging.SetMinimumLevel(LogLevel.Information);
+
 
 // ───── DATABASE ──────────────────────────────
 svc.AddDbContext<DevopsDb>(opt =>
