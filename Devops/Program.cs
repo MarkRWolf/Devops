@@ -175,6 +175,7 @@ builder.Services.AddOpenTelemetry()
           .AddOtlpExporter(options =>
         {
             options.Endpoint = new Uri(otelBase + "/v1/traces");
+            options.Protocol = OtlpExportProtocol.HttpProtobuf;
         });
     })
     .WithMetrics(mp =>
@@ -187,6 +188,7 @@ builder.Services.AddOpenTelemetry()
           .AddOtlpExporter(options =>
         {
             options.Endpoint = new Uri(otelBase + "/v1/metrics");
+            options.Protocol = OtlpExportProtocol.HttpProtobuf;
         });
     });
 
@@ -198,6 +200,7 @@ builder.Logging.AddOpenTelemetry(o =>
     o.AddOtlpExporter(options =>
     {
         options.Endpoint = new Uri(otelBase + "/v1/traces");
+        options.Protocol = OtlpExportProtocol.HttpProtobuf;
     });
 });
 
