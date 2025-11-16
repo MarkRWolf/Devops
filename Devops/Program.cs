@@ -29,6 +29,9 @@ var svc = builder.Services;
 // builder.Logging.AddDebug();
 
 builder.Logging.ClearProviders();
+
+var otelBase = cfg["OTEL_COLLECTOR_ENDPOINT"] ?? "http://otel-collector:4318";
+
 builder.Logging.AddOpenTelemetry(options =>
 {
     options.SetResourceBuilder(ResourceBuilder.CreateDefault()
@@ -175,7 +178,6 @@ svc.AddControllers()
 svc.AddHealthChecks();
 
 // ───── OpenTelemetry ─────────────────
-var otelBase = cfg["OTEL_COLLECTOR_ENDPOINT"] ?? "http://otel-collector:4318";
 
 builder.Services.AddOpenTelemetry()
     .WithTracing(tp =>
