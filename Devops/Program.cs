@@ -199,7 +199,7 @@ builder.Logging.AddOpenTelemetry(o =>
     o.IncludeScopes = true;
     o.AddOtlpExporter(options =>
     {
-        options.Endpoint = new Uri(otelBase + "/v1/traces");
+        options.Endpoint = new Uri(otelBase + "/v1/logs");
         options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
     });
 });
