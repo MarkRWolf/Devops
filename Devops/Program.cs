@@ -26,8 +26,9 @@ var svc = builder.Services;
 
 // ───── LOGGING ─────────────────────────────────
 builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
-builder.Logging.AddDebug();
+builder.Logging.AddOpenTelemetry(options =>
+{
+});
 
 // ───── DATABASE ──────────────────────────────
 svc.AddDbContext<DevopsDb>(opt =>
