@@ -26,11 +26,16 @@ var svc = builder.Services;
 
 // ───── LOGGING ─────────────────────────────────
 builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
-builder.Logging.AddDebug();
-
-builder.Logging.SetMinimumLevel(LogLevel.Information);
-
+// builder.Logging.AddConsole();
+// builder.Logging.AddDebug();
+builder.Logging.AddOpenTelemetry(x => 
+{    x.AddOtlpExporter(a => 
+    { 
+        a.Endpoint = new Uri(cfg["OTEL_COLLECTOR_ENDPOINT"] ?? "http://otel-collector:4318"); 
+        a.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+        a.Headers = "";
+    });
+});
 
 // ───── DATABASE ──────────────────────────────
 svc.AddDbContext<DevopsDb>(opt =>
