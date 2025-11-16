@@ -295,6 +295,11 @@ app.MapMetrics();
 
 app.MapControllers();
 
+app.MapGet("/testlog", (ILogger<Program> logger) =>
+{
+    logger.LogInformation("This is a test log for Loki");
+    return Results.Ok("Log emitted");
+});
 
 app.Run();
 
