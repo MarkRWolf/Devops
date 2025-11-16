@@ -25,8 +25,23 @@ var cfg = builder.Configuration;
 var svc = builder.Services;
 
 // ───── LOGGING ─────────────────────────────────
-builder.Logging.AddConsole();
-builder.Logging.AddDebug();
+// builder.Logging.AddConsole();
+// builder.Logging.AddDebug();
+
+builder.Logging.ClearProviders();
+builder.Logging.AddOpenTelemetry(options =>
+{
+    options.SetResourceBuilder(ResourceBuilder.CreateDefault()
+        .AddService(cfg["OTel:ServiceName"] ?? "devops-backend", cfg["OTel:ServiceVersion"] ?? "1.0.0"));
+    options.IncludeScopes = true;
+    options.ParseStateValues = true;
+    options.AddOtlpExporter(opt =>
+    {
+        opt.Endpoint = new Uri(otelBase.TrimEnd('/') + "/v1/logs");
+        opt.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+    });
+});
+
 
 // ───── DATABASE ──────────────────────────────
 svc.AddDbContext<DevopsDb>(opt =>
