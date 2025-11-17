@@ -26,16 +26,9 @@ var svc = builder.Services;
 
 // ───── LOGGING ─────────────────────────────────
 builder.Logging.ClearProviders();
-// builder.Logging.AddConsole();
-// builder.Logging.AddDebug();
-builder.Logging.AddOpenTelemetry(x => 
-{    x.AddOtlpExporter(a => 
-    { 
-        a.Endpoint = new Uri(cfg["OTEL_COLLECTOR_ENDPOINT"] ?? "http://otel-collector:4318"); 
-        a.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
-        a.Headers = "";
-    });
-});
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
 
 // ───── DATABASE ──────────────────────────────
 svc.AddDbContext<DevopsDb>(opt =>
@@ -170,46 +163,40 @@ svc.AddHealthChecks();
 
 // ───── OpenTelemetry ─────────────────
 var otelBase = cfg["OTEL_COLLECTOR_ENDPOINT"] ?? "http://otel-collector:4318";
-
 builder.Services.AddOpenTelemetry()
-    .WithTracing(tp =>
-    {
-        tp.SetResourceBuilder(ResourceBuilder.CreateDefault()
-                .AddService(cfg["OTel:ServiceName"] ?? "devops-backend", serviceVersion: cfg["OTel:ServiceVersion"] ?? "1.0.0"))
-          .AddAspNetCoreInstrumentation()
-          .AddHttpClientInstrumentation()
-          .AddSqlClientInstrumentation()
-          .AddOtlpExporter(options =>
-        {
-            options.Endpoint = new Uri(otelBase + "/v1/traces");
-            options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
-        });
-    })
-    .WithMetrics(mp =>
-    {
-        mp.SetResourceBuilder(ResourceBuilder.CreateDefault()
-                .AddService(cfg["OTel:ServiceName"] ?? "devops-backend", serviceVersion: cfg["OTel:ServiceVersion"] ?? "1.0.0"))
-          .AddAspNetCoreInstrumentation()
-          .AddRuntimeInstrumentation()
-          .AddHttpClientInstrumentation()
-          .AddOtlpExporter(options =>
-        {
-            options.Endpoint = new Uri(otelBase + "/v1/metrics");
-            options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
-        });
-    });
-
-builder.Logging.AddOpenTelemetry(o =>
+.WithTracing(tp =>
 {
-    o.SetResourceBuilder(ResourceBuilder.CreateDefault()
-        .AddService(cfg["OTel:ServiceName"] ?? "devops-backend", serviceVersion: cfg["OTel:ServiceVersion"] ?? "1.0.0"));
-    o.IncludeScopes = true;
-    o.IncludeFormattedMessage = true;
-    o.ParseStateValues = true;
-    o.AddOtlpExporter(options =>
+    tp.AddAspNetCoreInstrumentation()
+    .AddHttpClientInstrumentation()
+    .AddSqlClientInstrumentation()
+    .AddOtlpExporter(options =>
     {
-        options.Endpoint = new Uri(otelBase + "/v1/logs");
+        options.Endpoint = new Uri(otelBase + "/v1/traces");
         options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+    });
+})
+.WithMetrics(mp =>
+{
+    mp.AddAspNetCoreInstrumentation()
+    .AddRuntimeInstrumentation()
+    .AddHttpClientInstrumentation()
+    .AddOtlpExporter(options =>
+    {
+        options.Endpoint = new Uri(otelBase + "/v1/metrics");
+        options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+    });
+});
+
+builder.Logging.AddOpenTelemetry(options =>
+{
+    options.IncludeScopes = true;
+    options.IncludeFormattedMessage = true;
+    options.ParseStateValues = true;
+    options.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("Devops"));
+    options.AddOtlpExporter(o =>
+    {
+        o.Endpoint = new Uri(otelBase + "/v1/logs");
+        o.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
     });
 });
 
