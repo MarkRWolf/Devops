@@ -33,7 +33,7 @@ public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEn
     if (existingUser != null)
         return Conflict(new { errors = new[] { "Username already exists." } });
 
-    var user = new IdentityUser { UserName = r.Username, Email = r.Email };
+    var user = new DevopsUser { UserName = r.Username, Email = r.Email };
     var result = await userManager.CreateAsync(user, r.Password);
 
     if (!result.Succeeded)
