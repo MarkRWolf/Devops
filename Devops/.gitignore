@@ -3,9 +3,10 @@ bin/
 obj/
 vs/
 
-Migrations/*
+Migrations/
 
-devops.db
+# Local DB files
+*.db*
 
 # Visual Studio files
 
