@@ -12,6 +12,13 @@ using System.Text.Json;
 using Azure.Identity;
 using Devops.Hubs;
 using System.Net;
+using Prometheus;
+using OpenTelemetry;
+using OpenTelemetry.Trace;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Instrumentation.SqlClient;
 
 var builder = WebApplication.CreateBuilder(args);
 var cfg = builder.Configuration;
@@ -21,6 +28,7 @@ var svc = builder.Services;
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
+
 
 // ───── DATABASE ──────────────────────────────
 svc.AddDbContext<DevopsDb>(opt =>
@@ -163,7 +171,48 @@ svc.AddControllers()
 
 svc.AddHealthChecks();
 
+// ───── OpenTelemetry ─────────────────
+var otelBase = cfg["OTEL_COLLECTOR_ENDPOINT"] ?? "http://otel-collector:4318";
+builder.Services.AddOpenTelemetry()
+.WithTracing(tp =>
+{
+    tp.AddAspNetCoreInstrumentation()
+    .AddHttpClientInstrumentation()
+    .AddSqlClientInstrumentation()
+    .AddOtlpExporter(options =>
+    {
+        options.Endpoint = new Uri(otelBase + "/v1/traces");
+        options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+    });
+})
+.WithMetrics(mp =>
+{
+    mp.AddAspNetCoreInstrumentation()
+    .AddRuntimeInstrumentation()
+    .AddHttpClientInstrumentation()
+    .AddOtlpExporter(options =>
+    {
+        options.Endpoint = new Uri(otelBase + "/v1/metrics");
+        options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+    });
+});
+
+builder.Logging.AddOpenTelemetry(options =>
+{
+    options.IncludeScopes = true;
+    options.IncludeFormattedMessage = true;
+    options.ParseStateValues = true;
+    options.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("Devops"));
+    options.AddOtlpExporter(o =>
+    {
+        o.Endpoint = new Uri(otelBase + "/v1/logs");
+        o.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+    });
+});
+
+
 var app = builder.Build();
+
 
 // Advanced signalR logging if needed
 /*
@@ -228,7 +277,17 @@ app.MapHealthChecks("/API/health");
 app.MapHub<WorkflowHub>("/WS/workflowHub")
     .RequireCors(app.Environment.IsDevelopment() ? "Local" : "Production");
 
+
+app.UseHttpMetrics();
+app.MapMetrics();
+
 app.MapControllers();
+
+app.MapGet("/testlog", (ILogger<Program> logger) =>
+{
+    logger.LogInformation("This is a test log for Loki");
+    return Results.Ok("Log emitted");
+});
 
 app.Run();
 
