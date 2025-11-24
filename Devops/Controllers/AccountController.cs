@@ -29,24 +29,23 @@ public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEn
 [HttpPost("signup")]
     public async Task<IActionResult> Register([FromBody] SignupReq r, [FromServices] IEmailSender email)
     {
-        var res = await auth.RegisterAsync(r.Email, r.Password, r.Username);
-        if (!res.Success || res.User is null)
-            return Conflict(new { errors = res.Errors });
+    var existingUser = await userManager.FindByNameAsync(r.Username);
+    if (existingUser != null)
+        return Conflict(new { errors = new[] { "Username already exists." } });
 
-        var user = await userManager.FindByEmailAsync(r.Email);
-        if (user == null)
-            return BadRequest("User creation failed.");
+    var user = new IdentityUser { UserName = r.Username, Email = r.Email };
+    var result = await userManager.CreateAsync(user, r.Password);
 
-        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
-        var encoded = WebUtility.UrlEncode(token);
+    if (!result.Succeeded)
+        return Conflict(new { errors = result.Errors.Select(e => e.Description) });
 
-        var apiBase = cfg["App:ApiBaseUrl"] ?? $"{Request.Scheme}://{Request.Host}";
-        var confirmUrl = $"{apiBase}/API/account/confirm-email?userId={user.Id}&token={encoded}";
+    var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+    var encoded = WebUtility.UrlEncode(token);
+    var apiBase = cfg["App:ApiBaseUrl"] ?? $"{Request.Scheme}://{Request.Host}";
+    var confirmUrl = $"{apiBase}/API/account/confirm-email?userId={user.Id}&token={encoded}";
+await email.SendAsync(user.Email!, "Confirm your email", $"Click <a href=\"{confirmUrl}\">here</a> to confirm your email.");
 
-        var body = $"Click <a href=\"{confirmUrl}\">here</a> to confirm your email.";
-        await email.SendAsync(user.Email!, "Confirm your email", body);
-
-        return StatusCode(201, new { res.User, Message = "User registered. Check your email to confirm your account." });
+    return StatusCode(201, new { user, Message = "User registered. Check your email to confirm your account." });
     }
 
     [HttpGet("confirm-email")]
