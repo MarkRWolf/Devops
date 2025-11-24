@@ -26,27 +26,35 @@ public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEn
     };
 
 
-[HttpPost("signup")]
+    [HttpPost("signup")]
     public async Task<IActionResult> Register([FromBody] SignupReq r, [FromServices] IEmailSender email)
     {
-    var existingUser = await userManager.FindByNameAsync(r.Username);
-    if (existingUser != null)
-        return Conflict(new { errors = new[] { "Username already exists." } });
+        var existingByEmail = await userManager.FindByEmailAsync(r.Email);
+        if (existingByEmail != null)
+            return Conflict(new { errors = new[] { "Email already in use." } });
 
-    var user = new DevopsUser { UserName = r.Username, Email = r.Email };
-    var result = await userManager.CreateAsync(user, r.Password);
+        var existingByName = await userManager.FindByNameAsync(r.Username);
+        if (existingByName != null)
+            return Conflict(new { errors = new[] { "Username already in use." } });
 
-    if (!result.Succeeded)
-        return Conflict(new { errors = result.Errors.Select(e => e.Description) });
+        var user = new DevopsUser { UserName = r.Username, Email = r.Email };
+        var result = await userManager.CreateAsync(user, r.Password);
+        if (!result.Succeeded)
+            return Conflict(new { errors = result.Errors.Select(e => e.Description) });
 
-    var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
-    var encoded = WebUtility.UrlEncode(token);
-    var apiBase = cfg["App:ApiBaseUrl"] ?? $"{Request.Scheme}://{Request.Host}";
-    var confirmUrl = $"{apiBase}/API/account/confirm-email?userId={user.Id}&token={encoded}";
-await email.SendAsync(user.Email!, "Confirm your email", $"Click <a href=\"{confirmUrl}\">here</a> to confirm your email.");
+        await userManager.AddToRoleAsync(user, "User");
 
-    return StatusCode(201, new { user, Message = "User registered. Check your email to confirm your account." });
+        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+        var encoded = WebUtility.UrlEncode(token);
+
+        var apiBase = cfg["App:ApiBaseUrl"] ?? $"{Request.Scheme}://{Request.Host}";
+        var confirmUrl = $"{apiBase}/API/account/confirm-email?userId={user.Id}&token={encoded}";
+
+        await email.SendAsync(user.Email!, "Confirm your email", $"Click <a href=\"{confirmUrl}\">here</a> to confirm your email.");
+
+        return StatusCode(201, new { user = user.ToPublic(), Message = "User registered. Check your email to confirm your account." });
     }
+
 
     [HttpGet("confirm-email")]
     public async Task<IActionResult> ConfirmEmail(Guid userId, string token)
