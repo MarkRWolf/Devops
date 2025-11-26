@@ -1,0 +1,26 @@
+{
+  "$id": "http://localhost:4433/schemas/default",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Default Identity",
+  "type": "object",
+  "properties": {
+    "traits": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "title": "Email",
+          "unique": true
+        },
+        "username": {
+          "type": "string",
+          "title": "Username",
+          "unique": true
+        }
+      },
+      "required": ["email", "username"],
+      "additionalProperties": false
+    }
+  }
+}

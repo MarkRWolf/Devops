@@ -1,0 +1,24 @@
+dsn: postgres://kratos:secret@kratos-db:5432/kratos?sslmode=disable
+
+log:
+  level: debug
+
+serve:
+  public:
+    base_url: http://localhost:4433/
+  admin:
+    base_url: http://localhost:4434/
+
+selfservice:
+  default_browser_return_url: http://localhost:4433/
+  allowed_return_urls:
+    - http://localhost:3000/
+  methods:
+    password:
+      enabled: true
+
+identity:
+  schemas:
+    - id: default
+      url: file:///etc/kratos/identity.schema.json
+
