@@ -13,36 +13,16 @@ import (
 )
 
 var kratosPublic = getenv("KRATOS_PUBLIC_URL", "http://kratos:4433")
-var kratosAdmin = getenv("KRATOS_ADMIN_URL", "http://kratos:4434")
+var hydraPublic = getenv("HYDRA_PUBLIC_URL", "http://hydra:4444")
 
 type SignupRequest struct {
 	Traits   map[string]interface{} `json:"traits"`
 	Password string                 `json:"password"`
 }
 
-type AdminIdentityPayload struct {
-	SchemaID string `json:"schema_id"`
-	Traits   map[string]interface{} `json:"traits"`
-	Credentials struct {
-		Password struct {
-			Config struct {
-				Password string `json:"password"`
-			} `json:"config"`
-		} `json:"password"`
-	} `json:"credentials"`
-}
-
-type AdminIdentityList []struct {
-	ID     string `json:"id"`
-	Traits struct {
-		Email    string `json:"email"`
-		Username string `json:"username"`
-	} `json:"traits"`
-}
-
 func main() {
 	r := chi.NewRouter()
-	r.Post("/signup", signup)
+	r.Get("/oauth2/auth", authRedirect)
 	r.Post("/login", login)
 	r.Get("/whoami", whoami)
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("ok")) })
@@ -52,57 +32,15 @@ func main() {
 	log.Fatal(http.ListenAndServe(addr, r))
 }
 
-func signup(w http.ResponseWriter, r *http.Request) {
-	var req SignupRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
+func authRedirect(w http.ResponseWriter, r *http.Request) {
+	params := url.Values{}
+	params.Set("client_id", "auth-client")
+	params.Set("response_type", "code")
+	params.Set("scope", "openid profile offline")
+	params.Set("redirect_uri", "http://localhost:3000/auth/callback")
+	params.Set("state", "random_state_string")
 
-	query := url.Values{}
-	query.Add("query", req.Traits["email"].(string))
-	query.Add("query", req.Traits["username"].(string))
-
-	checkURL := kratosAdmin + "/admin/identities?" + query.Encode()
-	checkResp, err := http.Get(checkURL)
-	if err != nil {
-		log.Printf("Kratos Admin API check error: %v", err)
-		http.Error(w, "Kratos admin check error", http.StatusInternalServerError)
-		return
-	}
-	defer checkResp.Body.Close()
-
-	var existing AdminIdentityList
-	if err := json.NewDecoder(checkResp.Body).Decode(&existing); err != nil {
-		log.Printf("Kratos Admin API decode error: %v", err)
-		http.Error(w, "Kratos admin decode error", http.StatusInternalServerError)
-		return
-	}
-
-	if len(existing) > 0 {
-		http.Error(w, "Identity with this email or username already exists.", http.StatusConflict)
-		return
-	}
-
-	payload := AdminIdentityPayload{
-		SchemaID: "default",
-		Traits:   req.Traits,
-	}
-	payload.Credentials.Password.Config.Password = req.Password
-
-	payloadBytes, _ := json.Marshal(payload)
-
-	resp, err := http.Post(kratosAdmin+"/admin/identities", "application/json", bytes.NewReader(payloadBytes))
-	if err != nil {
-		log.Printf("Kratos Admin API error: %v", err)
-		http.Error(w, "Kratos admin error", http.StatusInternalServerError)
-		return
-	}
-	defer resp.Body.Close()
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(resp.StatusCode)
-	io.Copy(w, resp.Body)
+	http.Redirect(w, r, hydraPublic+"/oauth2/auth?"+params.Encode(), http.StatusFound)
 }
 
 func login(w http.ResponseWriter, r *http.Request) {
