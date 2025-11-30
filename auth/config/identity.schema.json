@@ -19,10 +19,16 @@
               }
             }
           }
+        },
+        "username": {
+            "type": "string",
+            "title": "Username",
+            "unique": true
         }
       },
       "required": [
-        "email"
+        "email",
+        "username"
       ],
       "additionalProperties": false
     }

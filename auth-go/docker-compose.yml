@@ -25,8 +25,8 @@ services:
       DATABASE_URL: postgres://postgres:postgres@auth-db:5432/authdb?sslmode=disable
       JWT_SIGNING_KEY: "dev-sign-key-change-me"
       ADDR: ":8080"
-      KRATOS_PUBLIC_URL: http://kratos:4433
-      HYDRA_PUBLIC_URL: http://hydra:4444
+      KRATOS_PUBLIC_URL: http://localhost:4433
+      HYDRA_PUBLIC_URL: http://localhost:4444
     command: ["/wait-for-postgres.sh", "auth-db", "/auth-go"]
     ports:
       - "8000:8080"
@@ -101,16 +101,16 @@ services:
     environment:
       DSN: postgres://hydra:secret@hydra-db:5432/hydra?sslmode=disable
       LOG_LEVEL: debug
-
       SECRETS_SYSTEM: |
         [
           "0123456789abcdef0123456789abcdef",
           "abcdef0123456789abcdef0123456789"
         ]
-
-      URLS_LOGIN: http://frontend:3000/login
-      URLS_CONSENT: http://frontend:3000/consent
-
+      URLS_LOGIN: http://localhost:3000/login
+      URLS_CONSENT: http://localhost:3000/consent
+      URLS_SELF_ISSUER: http://localhost:4444
+      URLS_PUBLIC: http://localhost:4444
+      URLS_ADMIN: http://localhost:4445
     ports:
       - "4444:4444"
       - "4445:4445"
@@ -129,9 +129,9 @@ services:
     command:
       - -c
       - |
-        until curl -sf http://hydra:4445/health/ready; do sleep 1; done
+        until curl -sf http://localhost:4445/health/ready; do sleep 1; done
         sleep 5
-        curl --fail -X POST http://hydra:4445/clients \
+        curl --fail -X POST http://localhost:4445/clients \
           -H "Content-Type: application/json" \
           -d '{
             "client_id": "auth-client",
@@ -139,7 +139,7 @@ services:
             "grant_types": ["authorization_code","refresh_token"],
             "response_types": ["code","id_token"],
             "scope": "openid profile offline",
-            "callbacks": ["http://frontend:3000/auth/callback"],
+            "callbacks": ["http://localhost:3000/auth/callback"],
             "token_endpoint_auth_method": "client_secret_post",
             "skip_consent": true
           }'

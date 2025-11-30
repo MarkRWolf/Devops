@@ -5,6 +5,7 @@ serve:
     cors:
       enabled: true
       allowed_origins:
+        - https://devoptics.mark-wolf.com
         - http://127.0.0.1*
         - http://localhost*
       allowed_methods:
@@ -17,7 +18,6 @@ serve:
         - Authorization
       exposed_headers:
         - Content-Type
-  # Enable CORS for the admin endpoint only during local testing
   admin:
     cors:
       enabled: true
@@ -38,12 +38,13 @@ serve:
 # 4434: Kratos admin URL
 urls:
   self:
-    issuer: http://127.0.0.1:4444
-  consent: http://127.0.0.1:4455/consent
-  login: http://127.0.0.1:4455/login
-  logout: http://127.0.0.1:4455/logout
+    issuer: http://hydra:4444/
+    public: http://localhost/hydra
+  consent: http://localhost:4455/consent
+  login: http://localhost:4455/login
+  logout: http://localhost:4455/logout
   identity_provider:
-    url: http://127.0.0.1:4434
+    url: http://kratos:4434
 
 secrets:
   system:
@@ -60,3 +61,4 @@ oidc:
 log:
   leak_sensitive_values: true
   level: info
+

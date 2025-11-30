@@ -16,18 +16,18 @@ services:
     restart: on-failure
     networks:
       - intranet
-  kratos-selfservice-ui-node: #Kratos UI: sign up, sign in, logout, etc
+  kratos-selfservice-ui-node:
     image: oryd/kratos-selfservice-ui-node:v1.2.0
     ports:
       - "4455:4455"
     environment:
       - KRATOS_PUBLIC_URL=http://kratos:4433/
-      - KRATOS_BROWSER_URL=http://127.0.0.1:4433/
+      - KRATOS_BROWSER_URL=https://devoptics.mark-wolf.com/kratos-ui/
       - HYDRA_ADMIN_URL=http://hydra:4445
       - PORT=4455
-      - COOKIE_SECRET=SuperSecretCookie # not included in quick-start.yml
-      - CSRF_COOKIE_NAME=__OryKratosApp # not included in quick-start.yml
-      - CSRF_COOKIE_SECRET=SuperSecretCookieCsrf # not included in quick-start.yml
+      - COOKIE_SECRET=SuperSecretCookie
+      - CSRF_COOKIE_NAME=__OryKratosApp
+      - CSRF_COOKIE_SECRET=SuperSecretCookieCsrf
     networks:
       - intranet
     restart: on-failure
@@ -36,8 +36,8 @@ services:
       - kratos-migrate
     image: oryd/kratos:v1.2.0
     ports:
-      - '4433:4433' # public
-      - '4434:4434' # admin
+      - '4433:4433'
+      - '4434:4434'
     restart: unless-stopped
     environment:
       - DSN=sqlite:///var/lib/sqlite/db.sqlite?_fk=true
@@ -59,21 +59,9 @@ services:
       - '4437:4437'
     networks:
       - intranet
-  # The dedicated Go OAuth 2.0 Client service
-  go-client:
-    build:
-      context: ./client-service # Assumes the Go files are in a subdirectory named 'client-service'
-      dockerfile: Dockerfile
-    ports:
-      - "8000:8080"
-    environment:
-    - CLIENT_ID=go-auth-client-app
-    - CLIENT_SECRET=client-secret-secure-12345
-    networks:
-      - intranet
-    restart: unless-stopped
 
 networks:
   intranet:
 volumes:
   kratos-sqlite:
+

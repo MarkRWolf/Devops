@@ -1,19 +1,21 @@
 version: v1.1.0
 
-dsn: memory
+dsn: sqlite:///var/lib/sqlite/db.sqlite?_fk=true
 
 serve:
   public:
-    base_url: http://127.0.0.1:4433
+    base_url: http://localhost:4433
     cors:
       enabled: true
   admin:
-    base_url: http://127.0.0.1:4434
+    base_url: http://localhost:4434
 
 selfservice:
-  default_browser_return_url: http://127.0.0.1:4455/
+  default_browser_return_url: http://localhost:4455
   allowed_return_urls:
     - http://127.0.0.1:4455
+    - https://devoptics.mark-wolf.com
+    - https://devoptics.mark-wolf.com/*
 
   methods:
     password:
@@ -25,18 +27,18 @@ selfservice:
 
   flows:
     error:
-      ui_url: http://127.0.0.1:4455/error
+      ui_url: http://localhost:4455/error
     settings:
-      ui_url: http://127.0.0.1:4455/settings
+      ui_url: http://localhost:4455/settings
       privileged_session_max_age: 15m
       required_aal: highest_available
     logout:
       after:
-        default_browser_return_url: http://127.0.0.1:4455/login
+        default_browser_return_url: https://localhost/login
     login:
-      ui_url: http://127.0.0.1:4455/login
+      ui_url: http://localhost:4455/login
     registration:
-      ui_url: http://127.0.0.1:4455/registration
+      ui_url: http://localhost:4455/registration
       after:
         password:
           hooks:
@@ -55,13 +57,13 @@ secrets:
 
 identity:
   default_schema_id: default
-  schemas: 
+  schemas:
     - id: default
-      url: file:///etc/config/kratos/identity.schema.json # Important: identity schema
+      url: file:///etc/config/kratos/identity.schema.json
 
 courier:
   smtp:
     connection_uri: smtps://test:test@mailslurper:1025/?skip_ssl_verify=true
 
 oauth2_provider:
-  url: http://hydra:4445 # Important: hydra admin URL
+  url: http://hydra:4445
