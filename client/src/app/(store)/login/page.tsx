@@ -1,20 +1,14 @@
-export const dynamic = "force-dynamic";
-import LoginForm from "@/components/LoginForm";
-import { checkAuth } from "@/lib/helpers/checkAuth";
 import { redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/auth";
 
 export default async function LoginPage() {
-  const user = await checkAuth();
-  if (user) {
-    await new Promise((resolve) => setTimeout(resolve, 400));
+  const session = await getServerSession(authOptions);
+
+  if (session) {
     redirect("/dashboard");
   }
 
-  return (
-    <main className="text-center space-y-4 py-10">
-      <h1 className="text-2xl font-bold">Login</h1>
-      <p>Please log in to access your dashboard.</p>
-      <LoginForm />
-    </main>
-  );
+  redirect("/api/auth/signin/ory-hydra");
 }
+

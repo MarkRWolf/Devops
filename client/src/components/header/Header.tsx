@@ -1,12 +1,14 @@
 "use client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSelectedLayoutSegments } from "next/navigation";
 import { ThemeToggler } from "../themeToggler";
 import Logo from "@/generated/svgs/Logo";
 import Link from "next/link";
 import useScrollShadow from "./useScrollShadow";
-import LoginButton from "../LoginButton";
 
 const Header = () => {
+  const segments = useSelectedLayoutSegments();
+  const pathname = segments[0] ? `/${segments[0]}` : "/";
+  const links = [["dashboard", "/login"]] as const;
   const router = useRouter();
   const shadow = useScrollShadow();
 
@@ -25,7 +27,18 @@ const Header = () => {
           </Link>
         </div>
         <div className="flex justify-end items-center gap-4 text-lg">
-          <LoginButton /> 
+           {links.map(([name, href]) => (
+            <Link
+              key={name}
+              href={href}
+              onMouseOver={() => router.prefetch(href)}
+              className={`capitalize transition-transform duration-200 hover:-translate-y-0.5 ${
+                pathname === href ? "text-foreground" : "text-muted-foreground"
+              }`}
+            >
+              {name}
+            </Link>
+          ))}
           <ThemeToggler />
         </div>
       </div>

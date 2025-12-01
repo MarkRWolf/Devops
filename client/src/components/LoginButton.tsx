@@ -1,19 +1,10 @@
-"use client";
-
 import { signIn } from "next-auth/react";
 
-const LoginButton = () => {
-  const handleLogin = () => {
-    signIn("ory-hydra", { callbackUrl: "/dashboard", redirect: false });
-  };
-
+export function LoginButton() {
   return (
-    <button 
-     className={`capitalize transition-transform duration-200 hover:-translate-y-0.5`}
-     onClick={handleLogin}>
-      Dashboard
+    <button onClick={() => signIn("ory-hydra")}>
+      Sign in with ORY Hydra
     </button>
   );
 }
 
-export default LoginButton;
