@@ -1,9 +1,10 @@
-namespace Devops.Data;
+namespace Devops.Models;
 
 using Microsoft.AspNetCore.Identity;
 
 public sealed class DevopsUser : IdentityUser<Guid>
 {
+    public string HydraSubject { get; set; } = "";
     public bool IsAdmin { get; set; }
 
     public string? EncryptedGitHubPat { get; set; }

@@ -3,6 +3,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Devops.Models;
 
 
 public class DevopsDb : IdentityDbContext<DevopsUser, IdentityRole<Guid>, Guid>
@@ -17,6 +18,9 @@ public class DevopsDb : IdentityDbContext<DevopsUser, IdentityRole<Guid>, Guid>
             u.Property(e => e.Email).IsRequired();
             u.HasIndex(e => e.NormalizedEmail).IsUnique();
             u.Property(e => e.UserName).IsRequired();
+
+            u.Property(e => e.HydraSubject).IsRequired();
+            u.HasIndex(e => e.HydraSubject).IsUnique();
         });
     }
 }

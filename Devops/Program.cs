@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Devops.Data;
+using Devops.Models;
 using Devops.Services;
 using Devops.Services.Interfaces;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -87,43 +88,18 @@ else
 
 
 // ───── JWT & AUTHENTICATION ─────────────────
-var key = Encoding.UTF8.GetBytes(cfg["JwtSettings:Secret"]!);
 svc.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
    .AddJwtBearer(o =>
    {
-       o.Events = new JwtBearerEvents
-       {
-            OnMessageReceived = ctx =>
-            {
-                if (ctx.Request.Cookies.TryGetValue("DevopsUserToken", out var tok))
-                    ctx.Token = tok;
-                return Task.CompletedTask;
-            },
-           OnAuthenticationFailed = ctx =>
-           {
-               var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
-               logger.LogError(ctx.Exception, "JWT authentication failed → {ExceptionType} - {ExceptionMessage}",
-                   ctx.Exception.GetType().Name, ctx.Exception.Message);
-               return Task.CompletedTask;
-           },
-           OnTokenValidated = ctx =>
-           {
-               var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
-               logger.LogInformation("JWT OK → user id {UserId}", ctx.Principal!.FindFirst("id")?.Value);
-               return Task.CompletedTask;
-           }
-       };
+       o.Authority = "http://hydra:4444";
+       o.RequireHttpsMetadata = false;
+       o.MapInboundClaims = false;
 
        o.TokenValidationParameters = new TokenValidationParameters
        {
-           ValidateIssuerSigningKey = true,
-           IssuerSigningKey = new SymmetricSecurityKey(key),
+           ValidateAudience = false,
            ValidateIssuer = true,
-           ValidIssuer = cfg["JwtSettings:Issuer"]!,
-           ValidateAudience = true,
-           ValidAudience = cfg["JwtSettings:Audience"]!,
-           ValidateLifetime = true,
-           ClockSkew = TimeSpan.FromMinutes(2)
+           ValidIssuer = "http://hydra:4444/",
        };
    });
 
@@ -132,7 +108,7 @@ svc.AddCors(options =>
 {
     options.AddPolicy(name: "Local", 
         builder => builder
-            .WithOrigins("http://localhost:3000", "http://localhost:80")
+            .WithOrigins("http://localhost:3000", "http://localhost:80", "http://localhost")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials());
@@ -150,7 +126,6 @@ svc.AddAuthorization();
 svc.AddSignalR();
 
 // ───── APPLICATION SERVICES ─────────────────
-svc.AddScoped<IAuthService, AuthService>();
 svc.AddScoped<IPatService, PatService>();
 svc.AddScoped<IGitHubService, GitHubService>();
 svc.AddScoped<IAzureDevOpsService, AzureDevOpsService>();

@@ -1,111 +1,64 @@
-﻿namespace Devops.Controllers;
-
-using System.Net;
-using Devops.Services.Interfaces;
+﻿using Devops.Data;
+using Devops.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Hosting;
-using Devops.Data;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+
+namespace Devops.Controllers;
 
 [ApiController]
 [Route("API/account")]
-public class AccountController(IAuthService auth, IConfiguration cfg, IWebHostEnvironment env, UserManager<DevopsUser> userManager) : ControllerBase
+public class AccountController : ControllerBase
 {
-    public record SignupReq(string Email, string Password, string Username);
-    public record Req(string Email, string Password);
+    private readonly UserManager<DevopsUser> _users;
+    private readonly ILogger<AccountController> _logger;
 
-   private CookieOptions CookieOpts(IWebHostEnvironment env) => new()
+    public AccountController(UserManager<DevopsUser> users, ILogger<AccountController> logger)
     {
-        HttpOnly = true,
-        SameSite = env.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None,
-        Secure = !env.IsDevelopment(),
-        Expires = DateTime.UtcNow.AddDays(30),
-        Path = "/"
-    };
-
-
-    [HttpPost("signup")]
-    public async Task<IActionResult> Register([FromBody] SignupReq r, [FromServices] IEmailSender email)
-    {
-        var existingByEmail = await userManager.FindByEmailAsync(r.Email);
-        if (existingByEmail != null)
-            return Conflict(new { errors = new[] { "Email already in use." } });
-
-        var existingByName = await userManager.FindByNameAsync(r.Username);
-        if (existingByName != null)
-            return Conflict(new { errors = new[] { "Username already in use." } });
-
-        var user = new DevopsUser { UserName = r.Username, Email = r.Email };
-        var result = await userManager.CreateAsync(user, r.Password);
-        if (!result.Succeeded)
-            return Conflict(new { errors = result.Errors.Select(e => e.Description) });
-
-        await userManager.AddToRoleAsync(user, "User");
-
-        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
-        var encoded = WebUtility.UrlEncode(token);
-
-        var apiBase = cfg["App:ApiBaseUrl"] ?? $"{Request.Scheme}://{Request.Host}";
-        var confirmUrl = $"{apiBase}/API/account/confirm-email?userId={user.Id}&token={encoded}";
-
-        await email.SendAsync(user.Email!, "Confirm your email", $"Click <a href=\"{confirmUrl}\">here</a> to confirm your email.");
-
-        return StatusCode(201, new { user = user.ToPublic(), Message = "User registered. Check your email to confirm your account." });
+        _users = users;
+        _logger = logger;
     }
-
-
-    [HttpGet("confirm-email")]
-    public async Task<IActionResult> ConfirmEmail(Guid userId, string token)
-    {
-        var user = await userManager.FindByIdAsync(userId.ToString());
-        if (user == null)
-            return NotFound("User not found.");
-
-        var result = await userManager.ConfirmEmailAsync(user, token);
-
-        if (!result.Succeeded)
-            return BadRequest("Invalid or expired token.");
-
-        return Ok(new { Message = "Email confirmed successfully." });
-    }
-
-
-    [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] Req r)
-    {
-        var res = await auth.LoginAsync(r.Email, r.Password);
-        if (res is null || res.User is null) return Unauthorized(new { errors = new[] { "Invalid credentials." } });
-        Response.Cookies.Append("DevopsUserToken", res.Token!, CookieOpts(env));
-        return Ok(new { res.User, Message = "Login successful." });
-    }
-
-    [HttpPost("logout")]
-    public IActionResult Logout()
-    {
-        Response.Cookies.Delete("DevopsUserToken", new CookieOptions
-        {
-            Path = "/",
-            Secure = true,
-            SameSite = SameSiteMode.None
-        });
-
-        return Ok(new { Message = "Logged out successfully." });
-    }
-
 
     [Authorize]
     [HttpGet("me")]
     public async Task<ActionResult<DevopsUser.Public>> Me()
     {
-        var userIdClaim = User.FindFirstValue("id");
-        if(!Guid.TryParse(userIdClaim, out var userId)) return Unauthorized("Invalid user ID.");        
+        var sub = User.FindFirstValue("sub");
+        if (string.IsNullOrWhiteSpace(sub))
+        {
+            _logger.LogWarning("Me: missing 'sub' claim. Claims: {Claims}", string.Join(", ", User.Claims.Select(c => $"{c.Type}={c.Value}")));
+            return Unauthorized();
+        }
 
-        var user = await userManager.FindByIdAsync(userId.ToString());
+        var user = await _users.Users.FirstOrDefaultAsync(u => u.HydraSubject == sub);
         if (user == null)
         {
-            return NotFound("User not found.");
+            var email = User.FindFirstValue("email");
+            var preferredUsername = User.FindFirstValue("preferred_username");
+
+            if (string.IsNullOrWhiteSpace(email))
+                email = $"{sub}@local";
+
+            var username = string.IsNullOrWhiteSpace(preferredUsername) ? email : preferredUsername;
+
+            _logger.LogInformation("Me: creating user for Hydra sub {Sub} with username {Username} and email {Email}", sub, username, email);
+
+            user = new DevopsUser
+            {
+                UserName = username,
+                Email = email,
+                HydraSubject = sub
+            };
+
+            var create = await _users.CreateAsync(user);
+            if (!create.Succeeded)
+            {
+                var errors = string.Join("; ", create.Errors.Select(e => $"{e.Code}: {e.Description}"));
+                _logger.LogError("Me: failed to create user for Hydra sub {Sub}. Errors: {Errors}", sub, errors);
+                return Unauthorized();
+            }
         }
 
         return Ok(user.ToPublic());
