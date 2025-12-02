@@ -18,7 +18,7 @@ type ProxyOptions =
 
 export function makeDotnetProxy(options?: ProxyOptions) {
   return async function handler(req: NextRequest) {
-    const backend = process.env.DOTNET_API_BASE_URL;
+    const backend = process.env.DOTNET_API_BASE_URL + "/API";
     if (!backend) throw new Error("DOTNET_API_BASE_URL is not set");
 
     const path = req.nextUrl.pathname.replace(/^\/api\//, "");

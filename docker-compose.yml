@@ -67,11 +67,13 @@ services:
         NEXT_PUBLIC_SELF_URL: ${NEXT_PUBLIC_SELF_URL}
     depends_on: [server]
     environment:
-      DOTNET_API_BASE_URL: http://server:5205/API
+      DOTNET_API_BASE_URL: http://server:5205
       NEXT_PUBLIC_SELF_URL: ${NEXT_PUBLIC_SELF_URL}
       ORY_HYDRA_CLIENT_ID: dev-nextauth
       ORY_HYDRA_CLIENT_SECRET: client-secret-secure
-      ORY_HYDRA_ISSUER: http://localhost/hydra
+      ORY_HYDRA_ISSUER: http://hydra:4444
+      ORY_HYDRA_PUBLIC_URL: http://localhost/hydra
+      ORY_HYDRA_INTERNAL_URL: http://hydra:4444
       NEXTAUTH_URL: http://localhost
       NEXTAUTH_SECRET: 42d44937ddea48d86fc9c08f5b452652b1fee73056208bb06c5d11dea04cf50d
     ports: ["3001:3000"]
@@ -157,7 +159,6 @@ services:
       - COOKIE_SECRET=SuperSecretCookie
       - CSRF_COOKIE_NAME=__OryKratosApp
       - CSRF_COOKIE_SECRET=SuperSecretCookieCsrf
-      - DANGEROUSLY_DISABLE_SECURE_CSRF_COOKIES=true
     networks:
       - intranet
     restart: on-failure

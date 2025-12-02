@@ -1,32 +1,29 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
-import type { User } from "@/lib/user/user";
 import { authOptions } from "@/auth";
-import { baseUrl } from "../settings";
+import type { User } from "@/lib/user/user";
 
-export async function checkAuth(): Promise<User | null> {
+export async function requireAuth(): Promise<User> {
   const session = await getServerSession(authOptions);
+  const baseUrl = process.env.DOTNET_API_BASE_URL;
+    console.log(baseUrl);
+  const token = session?.idToken;
 
-  const headers: HeadersInit = {
-    cookie: (await cookies()).toString(),
-  };
-
-  if (session?.accessToken) {
-    headers.Authorization = `Bearer ${session.accessToken}`;
+  if (!token) {
+    redirect("/login");
   }
 
-  const res = await fetch(`${baseUrl}/api/account/me`, {
-    headers,
+  const res = await fetch(`${baseUrl}/API/account/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
     cache: "no-store",
   });
 
-  return res.ok ? (res.json() as Promise<User>) : null;
-}
+  if (!res.ok) {
+    redirect("/login");
+  }
 
-export async function requireAuth(): Promise<User> {
-  const me = await checkAuth();
-  if (!me) redirect("/login");
-  return me;
+  return res.json() as Promise<User>;
 }
 

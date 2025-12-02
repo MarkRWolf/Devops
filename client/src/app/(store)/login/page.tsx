@@ -5,10 +5,9 @@ import { authOptions } from "@/auth";
 export default async function LoginPage() {
   const session = await getServerSession(authOptions);
 
-  if (session) {
+  if (session?.idToken) {
     redirect("/dashboard");
   }
 
-  redirect("/api/auth/signin/ory-hydra");
+  redirect("/api/auth/signin/hydra");
 }
-

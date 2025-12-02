@@ -16,3 +16,4 @@ declare module "@auth/core/jwt" {
     idToken?: string;
   }
 }
+
