@@ -1,28 +1,35 @@
-// Devops/Controllers/AzureDevOpsController.cs
+using Devops.Models;
+using Devops.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using System;
+using System.Collections.Generic;
+using System.Security.Claims;
+using System.Threading.Tasks;
+
 namespace Devops.Controllers
 {
-    using Devops.Models;
-    using Devops.Services.Interfaces;
-    using Microsoft.AspNetCore.Authorization;
-    using Microsoft.AspNetCore.Mvc;
-    using Microsoft.Extensions.Configuration;
-    using System;
-    using System.Collections.Generic;
-    using System.Security.Claims;
-    using System.Threading.Tasks;
-
     [ApiController]
     [Route("API/azure")]
+    [Authorize]
     public class AzureDevOpsController : ControllerBase
     {
         private readonly IAzureDevOpsService _svc;
+        private readonly UserManager<DevopsUser> _users;
         private readonly string? _org;
         private readonly string? _proj;
         private readonly string? _pat;
 
-        public AzureDevOpsController(IAzureDevOpsService svc, IConfiguration cfg)
+        public AzureDevOpsController(
+            IAzureDevOpsService svc,
+            IConfiguration cfg,
+            UserManager<DevopsUser> users)
         {
             _svc = svc;
+            _users = users;
             _org = cfg["Azure:ProjectOrganization"];
             _proj = cfg["Azure:ProjectName"];
             _pat = cfg["Azure:ProjectPat"];
@@ -30,11 +37,10 @@ namespace Devops.Controllers
 
         /* ───────────── USER-SCOPED (AUTH) ───────────── */
 
-        [Authorize]
         [HttpGet("builds")]
         public async Task<ActionResult<List<AzureBuild>>> GetBuilds()
         {
-            var uid = UserId();
+            var uid = await UserId();
             if (uid is null) return Unauthorized();
 
             var builds = await _svc.GetBuildsAsync(uid.Value);
@@ -43,44 +49,40 @@ namespace Devops.Controllers
                 : Ok(builds);
         }
 
-        [Authorize]
         [HttpGet("builds/{id}")]
         public async Task<ActionResult<AzureBuild>> GetBuild(int id)
         {
-            var uid = UserId();
+            var uid = await UserId();
             if (uid is null) return Unauthorized();
 
             var build = await _svc.GetBuildAsync(uid.Value, id);
             return build is null ? NotFound() : Ok(build);
         }
 
-        [Authorize]
         [HttpGet("builds/{id}/timeline")]
         public async Task<ActionResult<List<AzureJob>>> Timeline(int id)
         {
-            var uid = UserId();
+            var uid = await UserId();
             if (uid is null) return Unauthorized();
 
             var timeline = await _svc.GetBuildTimelineAsync(uid.Value, id);
             return timeline is null ? StatusCode(500) : Ok(timeline);
         }
 
-        [Authorize]
         [HttpGet("builds/{id}/artifacts")]
         public async Task<ActionResult<List<AzureArtifact>>> Artifacts(int id)
         {
-            var uid = UserId();
+            var uid = await UserId();
             if (uid is null) return Unauthorized();
 
             var artifacts = await _svc.GetBuildArtifactsAsync(uid.Value, id);
             return artifacts is null ? StatusCode(500) : Ok(artifacts);
         }
 
-        [Authorize]
         [HttpGet("builds/{id}/logs")]
         public async Task<ActionResult> Logs(int id)
         {
-            var uid = UserId();
+            var uid = await UserId();
             if (uid is null) return Unauthorized();
 
             var file = await _svc.DownloadBuildLogsAsync(uid.Value, id);
@@ -89,11 +91,10 @@ namespace Devops.Controllers
                 : File(file.Content, file.ContentType, file.FileName);
         }
 
-        [Authorize]
         [HttpGet("artifacts")]
         public async Task<ActionResult> Artifact([FromQuery] string url)
         {
-            var uid = UserId();
+            var uid = await UserId();
             if (uid is null) return Unauthorized();
 
             var file = await _svc.DownloadArtifactAsync(uid.Value, url);
@@ -158,7 +159,14 @@ namespace Devops.Controllers
 
         /* ───────────── helpers ───────────── */
 
-        private Guid? UserId()
-            => Guid.TryParse(User.FindFirstValue("id"), out var id) ? id : null;
+        private async Task<Guid?> UserId()
+        {
+            var sub = User.FindFirstValue("sub");
+            if (string.IsNullOrWhiteSpace(sub)) return null;
+
+            var user = await _users.Users.FirstOrDefaultAsync(u => u.HydraSubject == sub);
+            return user?.Id;
+        }
     }
 }
+
