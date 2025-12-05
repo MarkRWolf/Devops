@@ -18,7 +18,7 @@ export default function ProfileClient({ user: me }: { user: User }) {
 
  const logout = async () => {
   setErr("");
-  await signOut({ redirect: false });
+  await signOut({ callbackUrl: "/login" });
 };
 
   return (
