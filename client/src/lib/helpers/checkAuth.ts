@@ -10,7 +10,7 @@ export async function requireAuth(): Promise<User> {
   const token = session?.idToken;
 
   if (!token) {
-    redirect("/login");
+    redirect("/");
   }
 
   const res = await fetch(`${baseUrl}/API/account/me`, {
@@ -21,7 +21,7 @@ export async function requireAuth(): Promise<User> {
   });
 
   if (!res.ok) {
-    redirect("/login");
+    redirect("/");
   }
 
   return res.json() as Promise<User>;
