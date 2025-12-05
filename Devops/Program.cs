@@ -99,7 +99,11 @@ svc.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
        {
            ValidateAudience = false,
            ValidateIssuer = true,
-           ValidIssuer = "http://hydra:4444/",
+           ValidIssuers = new[]
+           {
+               "https://dev32.mark-wolf.com/hydra/",
+               "http://hydra:4444/"
+           }
        };
    });
 
