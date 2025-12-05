@@ -1,11 +1,16 @@
-namespace Devops.Controllers;
-
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using System.Linq;
+using Devops.Models;
 using Devops.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+namespace Devops.Controllers;
 
 [ApiController]
 [Route("API/pat")]
@@ -13,24 +18,31 @@ using Microsoft.AspNetCore.Mvc;
 public class PatController : ControllerBase
 {
     private readonly IPatService _pat;
-    public PatController(IPatService pat) => _pat = pat;
+    private readonly UserManager<DevopsUser> _users;
+    private readonly ILogger<PatController> _logger;
 
-    /* GitHub DTOs */
+    public PatController(
+        IPatService pat,
+        UserManager<DevopsUser> users,
+        ILogger<PatController> logger)
+    {
+        _pat = pat;
+        _users = users;
+        _logger = logger;
+    }
+
     public record StoreGitHubPatRequest(string GitHubPat, string GitHubOwnerRepo);
     public record PatStatusResponse(bool HasGitHubPat);
     public record WebhookSecretResponse(string WebhookSecret);
 
-    /* Azure DTOs */
     public record StoreAzurePatRequest(string AzurePat, string Organization, string Project);
     public record AzurePatStatusResponse(bool HasAzurePat);
-
-    /* ───────────── GitHub ───────────── */
 
     [HttpPost("github")]
     public async Task<IActionResult> StoreGitHubPat([FromBody] StoreGitHubPatRequest r)
     {
-        var uid = GetUserId();
-        if (uid == null) return Unauthorized("Invalid user ID.");
+        var uid = await GetUserId();
+        if (uid == null) return Unauthorized("Invalid user.");
 
         var (ok, err) = await _pat.StoreGitHubPatAsync(uid.Value, r.GitHubPat, r.GitHubOwnerRepo);
         return ok
@@ -41,8 +53,8 @@ public class PatController : ControllerBase
     [HttpGet("github/status")]
     public async Task<IActionResult> GetGitHubPatStatus()
     {
-        var uid = GetUserId();
-        if (uid == null) return Unauthorized("Invalid user ID.");
+        var uid = await GetUserId();
+        if (uid == null) return Unauthorized("Invalid user.");
 
         var pat = await _pat.GetDecryptedGitHubPatAsync(uid.Value);
         return Ok(new PatStatusResponse(pat is not null));
@@ -51,20 +63,18 @@ public class PatController : ControllerBase
     [HttpPost("github/webhook-secret/refresh")]
     public async Task<IActionResult> RefreshWebhookSecret()
     {
-        var uid = GetUserId();
-        if (uid == null) return Unauthorized("Invalid user ID.");
+        var uid = await GetUserId();
+        if (uid == null) return Unauthorized("Invalid user.");
 
         var secret = await _pat.RefreshGitHubWebhookSecretAsync(uid.Value);
         return Ok(new WebhookSecretResponse(secret));
     }
 
-    /* ───────────── Azure DevOps ───────────── */
-
     [HttpPost("azure")]
     public async Task<IActionResult> StoreAzurePat([FromBody] StoreAzurePatRequest r)
     {
-        var uid = GetUserId();
-        if (uid == null) return Unauthorized("Invalid user ID.");
+        var uid = await GetUserId();
+        if (uid == null) return Unauthorized("Invalid user.");
 
         var (ok, err) = await _pat.StoreAzurePatAsync(uid.Value, r.AzurePat, r.Organization, r.Project);
         return ok
@@ -75,8 +85,8 @@ public class PatController : ControllerBase
     [HttpGet("azure/status")]
     public async Task<IActionResult> GetAzurePatStatus()
     {
-        var uid = GetUserId();
-        if (uid == null) return Unauthorized("Invalid user ID.");
+        var uid = await GetUserId();
+        if (uid == null) return Unauthorized("Invalid user.");
 
         var pat = await _pat.GetDecryptedAzurePatAsync(uid.Value);
         return Ok(new AzurePatStatusResponse(pat is not null));
@@ -85,14 +95,35 @@ public class PatController : ControllerBase
     [HttpPost("azure/webhook-secret/refresh")]
     public async Task<IActionResult> RefreshAzureWebhookSecret()
     {
-        var uid = GetUserId();
-        if (uid == null) return Unauthorized("Invalid user ID.");
+        var uid = await GetUserId();
+        if (uid == null) return Unauthorized("Invalid user.");
+
         var secret = await _pat.RefreshAzureWebhookSecretAsync(uid.Value);
         return Ok(new { WebhookSecret = secret });
     }
 
+    private async Task<Guid?> GetUserId()
+    {
+        var sub = User.FindFirstValue("sub");
+        if (string.IsNullOrWhiteSpace(sub))
+        {
+            _logger.LogWarning("PAT: missing 'sub' claim. Claims: {Claims}",
+                string.Join(", ", User.Claims.Select(c => $"{c.Type}={c.Value}")));
+            return null;
+        }
 
-    /* ───────────── helpers ───────────── */
-    private Guid? GetUserId()
-        => Guid.TryParse(User.FindFirstValue("id"), out var id) ? id : null;
+        var user = await _users.Users
+            .Where(u => u.HydraSubject == sub)
+            .Select(u => new { u.Id })
+            .FirstOrDefaultAsync();
+
+        if (user == null)
+        {
+            _logger.LogWarning("PAT: no DevopsUser found for Hydra sub {Sub}", sub);
+            return null;
+        }
+
+        return user.Id;
+    }
 }
+
