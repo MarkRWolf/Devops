@@ -18,11 +18,9 @@ export default function ProfileClient({ user: me }: { user: User }) {
 
   const logout = async () => {
     setErr("");
-    try {
-      await signOut({ callbackUrl: "/" });
-    } catch {
-      setErr("Logout failed. Likely a network error.");
-    }
+    await signOut({
+      callbackUrl: "/kratos-ui/logout",
+    });
   };
 
   return (
