@@ -33,10 +33,11 @@ export function createDevopsApiProxy(options?: ProxyOptions) {
 
     if (options?.requireAuth) {
       const session = await getServerSession(authOptions);
-      if (!session?.accessToken) {
+      const token = session?.idToken as string | undefined;
+      if (!token) {
         return new NextResponse("Unauthorized", { status: 401 });
       }
-      extraHeaders["Authorization"] = `Bearer ${session.accessToken}`;
+      extraHeaders["Authorization"] = `Bearer ${token}`;
     }
 
     let res: Response;
