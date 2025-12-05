@@ -1,4 +1,7 @@
+// client/src/app/api/pat/[...path]/route.ts
 export const dynamic = "force-dynamic";
-import { makeDotnetProxy } from "@/lib/helpers/server/dotnetProxy";
 
-export const POST = makeDotnetProxy();
+import { createDevopsApiProxy } from "@/lib/helpers/server/devopsApiProxy";
+
+export const POST = createDevopsApiProxy({ requireAuth: true });
+
