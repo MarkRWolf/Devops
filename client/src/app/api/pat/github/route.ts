@@ -1,5 +1,5 @@
 export const dynamic = "force-dynamic";
-import { makeDotnetProxy } from "@/lib/helpers/server/dotnetProxy";
+import { createDevopsApiProxy } from "@/lib/helpers/server/devopsApiProxy";
 
-export const POST = makeDotnetProxy();
-export const DELETE = makeDotnetProxy();
+export const POST = createDevopsApiProxy({ requireAuth: true });
+
