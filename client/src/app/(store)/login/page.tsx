@@ -9,5 +9,5 @@ export default async function LoginPage() {
     redirect("/dashboard");
   }
 
-  redirect("/api/auth/signin/hydra");
+  redirect("/api/auth/signin/hydra?callbackUrl=/dashboard");
 }
