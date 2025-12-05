@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import type { User } from "@/lib/user/user";
 import { Button } from "@/components/ui/button";
 import { VscAzure, VscGithubAlt } from "react-icons/vsc";
@@ -20,12 +21,7 @@ export default function ProfileClient({ user: me }: { user: User }) {
   const logout = async () => {
     setErr("");
     try {
-      await fetch(`/api/account/logout`, {
-        method: "POST",
-        credentials: "include",
-        cache: "no-store",
-      });
-      router.push("/");
+      await signOut({ callbackUrl: "/" });
     } catch {
       setErr("Logout failed. Likely a network error.");
     }
@@ -68,3 +64,4 @@ export default function ProfileClient({ user: me }: { user: User }) {
     </main>
   );
 }
+
