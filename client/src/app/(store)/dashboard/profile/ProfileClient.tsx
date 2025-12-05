@@ -2,7 +2,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import type { User } from "@/lib/user/user";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,6 @@ import GitHubSection from "./GitHubSection";
 import AzureSection from "./AzureSection";
 
 export default function ProfileClient({ user: me }: { user: User }) {
-  const router = useRouter();
   const [showGitHub, setShowGitHub] = useState(false);
   const [showAzure, setShowAzure] = useState(false);
   const [err, setErr] = useState("");
