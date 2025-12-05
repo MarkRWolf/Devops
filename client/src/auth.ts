@@ -24,6 +24,7 @@ export const authOptions: NextAuthOptions = {
         url: `${hydraPublic}/oauth2/auth`,
         params: {
           scope: "openid offline_access profile email",
+          prompt: "login",
         },
       },
       token: `${hydraInternal}/oauth2/token`,
