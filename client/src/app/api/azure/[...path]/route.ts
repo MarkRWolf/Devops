@@ -1,9 +1,10 @@
 // client/src/app/api/azure/[...path]/route.ts
 export const dynamic = "force-dynamic";
-import { makeDotnetProxy } from "@/lib/helpers/server/dotnetProxy";
+import { createDevopsApiProxy } from "@/lib/helpers/server/devopsApiProxy";
 
-export const GET = makeDotnetProxy();
-export const POST = makeDotnetProxy();
-export const PUT = makeDotnetProxy();
-export const PATCH = makeDotnetProxy();
-export const DELETE = makeDotnetProxy();
+export const GET = createDevopsApiProxy({ requireAuth: true });
+export const POST = createDevopsApiProxy({ requireAuth: true });
+export const PUT = createDevopsApiProxy({ requireAuth: true });
+export const PATCH = createDevopsApiProxy({ requireAuth: true });
+export const DELETE = createDevopsApiProxy({ requireAuth: true });
+
