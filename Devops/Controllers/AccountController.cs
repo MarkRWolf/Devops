@@ -1,67 +1,117 @@
-﻿using Devops.Data;
-using Devops.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
+﻿using devops.data;
+using devops.models;
+using microsoft.aspnetcore.authorization;
+using microsoft.aspnetcore.identity;
+using microsoft.aspnetcore.mvc;
+using microsoft.entityframeworkcore;
+using system.security.claims;
+using system.text.json;
 
-namespace Devops.Controllers;
+namespace devops.controllers;
 
-[ApiController]
-[Route("API/account")]
-public class AccountController : ControllerBase
+[apicontroller]
+[route("api/account")]
+public class accountcontroller : controllerbase
 {
-    private readonly UserManager<DevopsUser> _users;
-    private readonly ILogger<AccountController> _logger;
+    private readonly usermanager<devopsuser> _users;
+    private readonly ilogger<accountcontroller> _logger;
+    private readonly ihttpclientfactory _httpclientfactory;
 
-    public AccountController(UserManager<DevopsUser> users, ILogger<AccountController> logger)
+    public accountcontroller(
+        usermanager<devopsuser> users,
+        ilogger<accountcontroller> logger,
+        ihttpclientfactory httpclientfactory)
     {
         _users = users;
         _logger = logger;
+        _httpclientfactory = httpclientfactory;
     }
 
-    [Authorize]
-    [HttpGet("me")]
-    public async Task<ActionResult<DevopsUser.Public>> Me()
+    [authorize]
+    [httpget("me")]
+    public async task<actionresult<devopsuser.public>> me()
     {
-        var sub = User.FindFirstValue("sub");
-        if (string.IsNullOrWhiteSpace(sub))
+        var sub = user.findfirstvalue("sub");
+        if (string.isnullorwhitespace(sub))
         {
-            _logger.LogWarning("Me: missing 'sub' claim. Claims: {Claims}", string.Join(", ", User.Claims.Select(c => $"{c.Type}={c.Value}")));
-            return Unauthorized();
+            _logger.logwarning("me: missing 'sub' claim. claims: {claims}", string.join(", ", user.claims.select(c => $"{c.type}={c.value}")));
+            return unauthorized();
         }
 
-        var user = await _users.Users.FirstOrDefaultAsync(u => u.HydraSubject == sub);
+        var user = await _users.users.firstordefaultasync(u => u.hydrasubject == sub);
         if (user == null)
         {
-            var email = User.FindFirstValue("email");
-            var preferredUsername = User.FindFirstValue("preferred_username");
+            var kratosadminbase = environment.getenvironmentvariable("kratos_admin_url") ?? "http://kratos:4434";
+            var client = _httpclientfactory.createclient();
+            httpresponsemessage resp;
 
-            if (string.IsNullOrWhiteSpace(email))
-                email = $"{sub}@local";
-
-            var username = string.IsNullOrWhiteSpace(preferredUsername) ? email : preferredUsername;
-
-            _logger.LogInformation("Me: creating user for Hydra sub {Sub} with username {Username} and email {Email}", sub, username, email);
-
-            user = new DevopsUser
+            try
             {
-                UserName = username,
-                Email = email,
-                HydraSubject = sub
+                resp = await client.getasync($"{kratosadminbase}/admin/identities/{sub}");
+            }
+            catch (exception ex)
+            {
+                _logger.logerror(ex, "me: failed to call kratos admin for sub {sub}", sub);
+                return unauthorized();
+            }
+
+            if (!resp.issuccessstatuscode)
+            {
+                _logger.logerror("me: kratos admin returned {statuscode} for sub {sub}", resp.statuscode, sub);
+                return unauthorized();
+            }
+
+            string? email = null;
+            string? preferredusername = null;
+
+            try
+            {
+                await using var stream = await resp.content.readasstreamasync();
+                using var doc = await jsondocument.parseasync(stream);
+                var root = doc.rootelement;
+
+                if (root.trygetproperty("traits", out var traits))
+                {
+                    if (traits.trygetproperty("email", out var emailprop) && emailprop.valuekind == jsonvaluekind.string)
+                        email = emailprop.getstring();
+
+                    if (traits.trygetproperty("username", out var usernameprop) && usernameprop.valuekind == jsonvaluekind.string)
+                        preferredusername = usernameprop.getstring();
+                }
+            }
+            catch (exception ex)
+            {
+                _logger.logerror(ex, "me: failed to parse kratos identity for sub {sub}", sub);
+                return unauthorized();
+            }
+
+            if (string.isnullorwhitespace(email))
+            {
+                _logger.logerror("me: kratos identity for sub {sub} has no email trait", sub);
+                return unauthorized();
+            }
+
+            var username = string.isnullorwhitespace(preferredusername) ? email : preferredusername;
+
+            _logger.loginformation("me: creating user for hydra sub {sub} with username {username} and email {email}", sub, username, email);
+
+            user = new devopsuser
+            {
+                username = username!,
+                email = email!,
+                hydrasubject = sub
             };
 
-            var create = await _users.CreateAsync(user);
-            if (!create.Succeeded)
+            var create = await _users.createasync(user);
+            if (!create.succeeded)
             {
-                var errors = string.Join("; ", create.Errors.Select(e => $"{e.Code}: {e.Description}"));
-                _logger.LogError("Me: failed to create user for Hydra sub {Sub}. Errors: {Errors}", sub, errors);
-                return Unauthorized();
+                var errors = string.join("; ", create.errors.select(e => $"{e.code}: {e.description}"));
+                _logger.logerror("me: failed to create user for hydra sub {sub}. errors: {errors}", sub, errors);
+                return unauthorized();
             }
         }
 
-        return Ok(user.ToPublic());
+        return ok(user.topublic());
     }
 }
 

@@ -1,10 +1,13 @@
 import { type NextAuthOptions } from "next-auth";
 
-const hydraInternal = process.env.ORY_HYDRA_INTERNAL_URL || "http://hydra:4444";
-const hydraIssuer = hydraInternal.endsWith("/")
-  ? hydraInternal
-  : hydraInternal + "/";
-const hydraPublic = process.env.ORY_HYDRA_PUBLIC_URL || "http://localhost/hydra";
+const hydraInternal =
+  process.env.ORY_HYDRA_INTERNAL_URL || "http://hydra:4444";
+
+const rawIssuer = process.env.ORY_HYDRA_ISSUER || hydraInternal;
+const hydraIssuer = rawIssuer.endsWith("/") ? rawIssuer : rawIssuer + "/";
+
+const hydraPublic =
+  process.env.ORY_HYDRA_PUBLIC_URL || "http://localhost/hydra";
 
 export const authOptions: NextAuthOptions = {
   debug: true,
@@ -47,4 +50,5 @@ export const authOptions: NextAuthOptions = {
     },
   },
 };
+
 
