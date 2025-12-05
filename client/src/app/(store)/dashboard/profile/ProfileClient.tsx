@@ -16,12 +16,12 @@ export default function ProfileClient({ user: me }: { user: User }) {
   const [showAzure, setShowAzure] = useState(false);
   const [err, setErr] = useState("");
 
-  const logout = async () => {
-    setErr("");
-    await signOut({
-      callbackUrl: "/kratos-ui/logout",
-    });
-  };
+ const logout = async () => {
+  setErr("");
+
+  await signOut({ redirect: false });
+  window.location.href = "/kratos-ui/logout";
+};
 
   return (
     <main className="bg-card rounded-xl max-w-5xl mx-auto py-4 px-8 border space-y-8">
