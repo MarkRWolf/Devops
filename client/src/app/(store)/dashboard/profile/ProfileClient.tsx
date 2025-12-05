@@ -20,7 +20,7 @@ export default function ProfileClient({ user: me }: { user: User }) {
   setErr("");
 
   await signOut({ redirect: false });
-  window.location.href = "/kratos-ui/logout";
+  window.location.href = "/kratos/self-service/logout/browser";
 };
 
   return (
